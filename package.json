@@ -1,0 +1,46 @@
+{
+  "name": "drivemart",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DriveMart: jogo web no estilo Driver (PS1) com compra e personalização de prédios via Pix.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tools/*",
+    "functions"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @drivemart/web",
+    "dev:all": "concurrently -k -n emu,web -c yellow,cyan \"npm run emulators\" \"npm run dev -w @drivemart/web\"",
+    "emulators": "npm run build -w @drivemart/functions && firebase emulators:start --project demo-drivemart --import .emulator-data --export-on-exit .emulator-data",
+    "build": "npm run build -w @drivemart/web && npm run build -w @drivemart/functions",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rules": "firebase emulators:exec --project demo-drivemart --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
+    "test:e2e": "npm run test:e2e -w @drivemart/web",
+    "city:extract": "npm run extract -w @drivemart/city-pipeline --",
+    "city:seed": "npm run seed -w @drivemart/city-pipeline --"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "firebase-tools": "^15.32.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

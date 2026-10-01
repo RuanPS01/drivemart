@@ -1,0 +1,21 @@
+{
+  "name": "@drivemart/city-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Extrai o traçado das cidades do Driver (VRML) e gera o layout usado pelo jogo.",
+  "scripts": {
+    "extract": "tsx src/cli/extract.ts",
+    "seed": "tsx src/cli/seed.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "clipper2-js": "^1.2.4",
+    "firebase-admin": "^14.5.0",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/pngjs": "^6.0.5"
+  }
+}

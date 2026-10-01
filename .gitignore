@@ -1,0 +1,17 @@
+node_modules/
+dist/
+lib/
+coverage/
+.cache/
+.emulator-data/
+*.log
+.env
+.env.local
+.env.*.local
+functions/.secret.local
+functions/.runtimeconfig.json
+.firebase/
+playwright-report/
+test-results/
+tools/city-pipeline/out/
+.DS_Store

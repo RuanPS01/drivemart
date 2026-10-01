@@ -1,0 +1,47 @@
+:root {
+  --bg: #0b0f17;
+  --panel: rgba(12, 16, 26, 0.88);
+  --panel-border: rgba(255, 255, 255, 0.12);
+  --text: #f1f3f7;
+  --muted: #9aa3b5;
+  --accent: #ffcc33;
+  --accent-ink: #1a1400;
+  --ok: #3ddc84;
+  --danger: #ff5a5f;
+  --info: #4fb3ff;
+  --font-title: 'Russo One', 'Barlow Condensed', system-ui, sans-serif;
+  --font-ui: 'Barlow Condensed', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.boot {
+  display: grid;
+  place-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.boot h1 {
+  font-family: var(--font-title);
+  font-size: 48px;
+  margin: 0 0 8px;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
