@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
-// Testes das regras do Firestore e do Storage. Rodam dentro de `firebase emulators:exec` (npm run test:rules).
+// Testes de regras e das Cloud Functions contra os emuladores (npm run test:emulator).
 export default defineConfig({
   test: {
-    include: ['tests/rules/**/*.test.ts'],
+    include: ['tests/**/*.test.ts'],
     environment: 'node',
     testTimeout: 20000,
     fileParallelism: false,

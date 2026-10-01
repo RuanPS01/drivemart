@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useGame } from '../../state/gameStore';
 import { useUi } from '../../state/uiStore';
 import { AuthModal } from './AuthModal';
+import { CheckoutModal } from './CheckoutModal';
 
 /** Renderiza o modal ativo e bloqueia o carro enquanto houver um aberto. */
 export function ModalHost() {
@@ -16,6 +17,8 @@ export function ModalHost() {
   switch (modal.name) {
     case 'auth':
       return <AuthModal key="auth" />;
+    case 'checkout':
+      return modal.lotId ? <CheckoutModal key={`checkout-${modal.lotId}`} lotId={modal.lotId} /> : null;
     default:
       return null;
   }
