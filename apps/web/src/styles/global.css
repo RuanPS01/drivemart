@@ -45,3 +45,278 @@ body,
   color: var(--accent);
   letter-spacing: 2px;
 }
+
+.app {
+  position: fixed;
+  inset: 0;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  background: #000;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+}
+
+.logo {
+  font-family: var(--font-title);
+  font-style: italic;
+  letter-spacing: 3px;
+  color: #fff;
+  margin: 0;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.logo span {
+  color: var(--accent);
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #1c2638, #06080d 70%);
+  z-index: 50;
+}
+
+.loading-box {
+  width: min(420px, calc(100vw - 32px));
+  text-align: center;
+}
+
+.loading-box .logo {
+  font-size: clamp(40px, 10vw, 64px);
+  margin-bottom: 24px;
+}
+
+.loading-bar {
+  height: 10px;
+  border: 2px solid #fff;
+  background: #000;
+  padding: 1px;
+}
+
+.loading-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.loading-box p {
+  color: var(--muted);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.loading-error {
+  color: var(--danger) !important;
+  text-transform: none !important;
+}
+
+.speedometer {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  font-family: var(--font-title);
+  font-style: italic;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  pointer-events: none !important;
+}
+
+.speedometer strong {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.speedometer span {
+  font-size: 16px;
+  color: var(--accent);
+}
+
+.hud-button {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(10, 12, 18, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hud-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.help-toggle {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 40px;
+  padding: 8px 0;
+}
+
+.controls-help {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: min(300px, calc(100vw - 32px));
+  padding: 16px;
+}
+
+.controls-help h3 {
+  font-family: var(--font-title);
+  font-style: italic;
+  margin: 0 0 8px;
+  color: var(--accent);
+}
+
+.controls-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.controls-help p {
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 6px;
+  margin-right: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-bottom-width: 3px;
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  text-align: center;
+}
+
+.btn {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.touch-controls {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 0;
+  pointer-events: none !important;
+}
+
+.touch-controls button {
+  pointer-events: auto;
+  touch-action: none;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(10, 12, 18, 0.45);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  font-size: 22px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-controls button:active {
+  background: rgba(255, 204, 51, 0.5);
+}
+
+.touch-left {
+  position: absolute;
+  left: 16px;
+  bottom: 70px;
+  display: flex;
+  gap: 14px;
+}
+
+.touch-right {
+  position: absolute;
+  right: 16px;
+  bottom: 70px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.touch-controls .touch-gas {
+  width: 92px;
+  height: 92px;
+  font-size: 14px;
+}
+
+.touch-controls .touch-small {
+  width: 64px;
+  height: 64px;
+  font-size: 10px;
+  line-height: 1.1;
+}
