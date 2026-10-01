@@ -1,6 +1,6 @@
 node_modules/
 dist/
-lib/
+functions/lib/
 coverage/
 .cache/
 .emulator-data/
@@ -19,4 +19,3 @@ apps/web/public/__samples__/
 functions/.env.local
 firestore-debug.log
 *-debug.log
-test-results/
