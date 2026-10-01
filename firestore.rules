@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// Escritas de lotes, pedidos e estado público acontecem só pelas Cloud Functions (Admin SDK ignora as regras).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    match /parcels/{parcelId} {
+      allow read: if true;
+      allow write: if false;
+
+      // Chave Pix e dados do recebedor: só o dono lê.
+      match /private/{doc} {
+        allow read: if signedIn()
+          && get(/databases/$(database)/documents/parcels/$(parcelId)).data.ownerUid == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    match /cityState/{region} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /cityIndex/{cityId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn()
+        && (resource.data.buyerUid == request.auth.uid
+          || resource.data.sellerUid == request.auth.uid
+          || isAdmin());
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if true;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 40;
+      allow delete: if false;
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['parcelId', 'reporterUid', 'reason', 'details', 'createdAt', 'status'])
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.parcelId is string
+        && request.resource.data.reason in ['ofensivo', 'golpe', 'direitos', 'outro']
+        && request.resource.data.status == 'open'
+        && (!('details' in request.resource.data)
+          || (request.resource.data.details is string && request.resource.data.details.size() <= 500));
+      allow read, update: if isAdmin();
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "@drivemart/city-data",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Traçado das cidades derivado dos níveis originais (apenas números: ruas, lotes, props). Sem texturas nem malhas originais."
+}

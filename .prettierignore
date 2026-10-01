@@ -1,0 +1,7 @@
+node_modules
+dist
+lib
+coverage
+.cache
+packages/city-data/**/*.json
+package-lock.json

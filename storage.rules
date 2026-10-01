@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(png|jpeg|webp|gif)');
+    }
+
+    // Fachadas publicadas (processadas pelas functions): leitura pública, escrita só pelo servidor.
+    match /facades/{parcelId}/published/{file} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Envio do dono: só o dono do lote, imagens de até 8 MB. O servidor valida, processa e apaga.
+    match /facades/{parcelId}/uploads/{file} {
+      allow read: if false;
+      allow create: if signedIn()
+        && firestore.get(/databases/(default)/documents/parcels/$(parcelId)).data.ownerUid == request.auth.uid
+        && request.resource.size < 8 * 1024 * 1024
+        && isImage();
+      allow update, delete: if false;
+    }
+
+    // Comprovantes de Pix da revenda: o comprador envia; comprador, vendedor e admin leem.
+    match /receipts/{orderId}/{file} {
+      allow read: if signedIn()
+        && (firestore.get(/databases/(default)/documents/orders/$(orderId)).data.buyerUid == request.auth.uid
+          || firestore.get(/databases/(default)/documents/orders/$(orderId)).data.sellerUid == request.auth.uid
+          || request.auth.token.admin == true);
+      allow create: if signedIn()
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.buyerUid == request.auth.uid
+        && request.resource.size < 5 * 1024 * 1024
+        && (isImage() || request.resource.contentType == 'application/pdf');
+      allow update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
