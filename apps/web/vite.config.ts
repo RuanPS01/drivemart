@@ -3,7 +3,7 @@ import { cpSync, createReadStream, existsSync, statSync } from 'node:fs';
 import { join, normalize, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
-const cityDataDir = resolve(__dirname, '../../packages/city-data');
+const cityDataDir = resolve(import.meta.dirname, '../../packages/city-data');
 
 /** Serve `packages/city-data` em /cities durante o dev e copia para dist/cities no build. */
 function cityData(): Plugin {
@@ -22,7 +22,7 @@ function cityData(): Plugin {
       });
     },
     writeBundle(options) {
-      const out = options.dir ?? resolve(__dirname, 'dist');
+      const out = options.dir ?? resolve(import.meta.dirname, 'dist');
       cpSync(cityDataDir, join(out, 'cities'), {
         recursive: true,
         filter: (src) => !src.endsWith('package.json') && !src.endsWith('ids.lock.json'),
@@ -34,5 +34,6 @@ function cityData(): Plugin {
 export default defineConfig({
   plugins: [react(), cityData()],
   worker: { format: 'es' },
-  build: { target: 'es2022', chunkSizeWarningLimit: 2500 },
+  // O maior pedaço é o Rapier com o WASM embutido (~4,3 MB, carregado à parte e guardado em cache).
+  build: { target: 'es2022', chunkSizeWarningLimit: 4500 },
 });

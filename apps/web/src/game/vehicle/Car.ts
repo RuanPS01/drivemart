@@ -42,6 +42,11 @@ export class Car {
   private upsideDownTime = 0;
   /** Velocidade escalar ao longo da frente do carro (m/s). */
   speed = 0;
+  /** Velocidade lateral (m/s): derrapagem. */
+  lateral = 0;
+  /** Maior desaceleração brusca desde a última leitura (m/s por passo), para o som de batida. */
+  private impact = 0;
+  private lastVel: { x: number; z: number } | null = null;
   readonly prevPos = new THREE.Vector3();
   readonly prevQuat = new THREE.Quaternion();
 
@@ -184,6 +189,14 @@ export class Car {
 
     // Arrasto e pressão aerodinâmica.
     const lv = this.body.linvel();
+    const q0 = this.body.rotation();
+    this.lateral = lv.x * (1 - 2 * (q0.y * q0.y + q0.z * q0.z)) + lv.z * 2 * (q0.x * q0.z - q0.w * q0.y);
+    if (this.lastVel) {
+      // Variação acima do que motor e freio conseguem num passo indica batida.
+      const dv = Math.hypot(lv.x - this.lastVel.x, lv.z - this.lastVel.z);
+      if (dv > 0.6) this.impact = Math.max(this.impact, dv);
+    }
+    this.lastVel = { x: lv.x, z: lv.z };
     const vel2 = lv.x * lv.x + lv.z * lv.z;
     const vel = Math.sqrt(vel2);
     this.body.resetForces(true);
@@ -203,6 +216,13 @@ export class Car {
       const p = this.body.translation();
       this.place(p.x, p.y + 1.2, p.z, this.heading);
     }
+  }
+
+  /** Devolve e zera a batida mais forte registrada (m/s perdidos num passo). */
+  takeImpact(): number {
+    const v = this.impact;
+    this.impact = 0;
+    return v;
   }
 
   /** Copia a pose da física para o visual, interpolando entre passos. */
@@ -230,6 +250,8 @@ export class Car {
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     this.steer = 0;
     this.upsideDownTime = 0;
+    this.lastVel = null;
+    this.impact = 0;
     this.savePrevious();
   }
 

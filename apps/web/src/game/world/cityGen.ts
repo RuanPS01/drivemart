@@ -10,7 +10,7 @@ import {
 } from '@drivemart/shared';
 import { FACADE_FAMILIES, LAYER, SHOP_LAYERS, type LayerName } from '../art/TextureLibrary';
 import { faceShade, MeshBuilder, type MeshData, type Vec3 } from './meshBuilder';
-import { POLE_PROPS, PROP_BUILDERS } from './props';
+import { POLE_PROPS, PROP_BUILDERS, SMASHABLE } from './props';
 
 /** Altura do térreo comercial (m). */
 export const SHOP_HEIGHT = 4;
@@ -465,6 +465,8 @@ export function buildChunk(index: CityIndex, key: string): ChunkBuild {
   const props = index.propsByChunk.get(key) ?? [];
   for (let i = 0; i < props.length; i += PROP_STRIDE) {
     const type = layout.propTypes[props[i]!]!;
+    // Objetos quebráveis são desenhados à parte (SmashProps), para poderem voar.
+    if (SMASHABLE[type]) continue;
     const pm = propMesh(type);
     if (!pm) continue;
     const x = props[i + 1]!,
@@ -505,6 +507,17 @@ export function buildChunk(index: CityIndex, key: string): ChunkBuild {
     }
     tidx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     if (type !== 'bush') boxes.push(x, y + 1.5, z, 0.2, 1.5, 0.2, 0);
+  }
+
+  // Piso de segurança invisível logo abaixo do chão mais baixo do chunk: se o traçado tiver um buraco,
+  // o carro não cai no vazio. Chunks com água ficam sem, para o carro afundar e voltar à rua como no Driver.
+  const polys = chunk?.g ?? [];
+  if (polys.length && !polys.some((p) => p.m === waterIdx) && groundPos.length) {
+    let minY = Infinity;
+    for (let i = 1; i < groundPos.length; i += 3) minY = Math.min(minY, groundPos[i]!);
+    const [cx, cz] = key.split(',').map(Number) as [number, number];
+    const size = layout.chunkSize;
+    boxes.push((cx + 0.5) * size, minY - 0.25, (cz + 0.5) * size, size / 2, 0.1, size / 2, 0);
   }
 
   return {

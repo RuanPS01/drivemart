@@ -16,7 +16,8 @@
   "scripts": {
     "dev": "npm run dev -w @drivemart/web",
     "dev:all": "concurrently -k -n emu,web -c yellow,cyan \"npm run emulators\" \"npm run dev -w @drivemart/web\"",
-    "emulators": "node scripts/ensure-secrets.mjs && npm run build -w @drivemart/functions && firebase emulators:start --project demo-drivemart --import .emulator-data --export-on-exit .emulator-data",
+    "emulators": "node scripts/ensure-secrets.mjs && npm run build -w @drivemart/functions && node scripts/emulators.mjs",
+    "emulators:seed": "node scripts/seed-emulator.mjs",
     "build": "npm run build -w @drivemart/web && npm run build -w @drivemart/functions",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",

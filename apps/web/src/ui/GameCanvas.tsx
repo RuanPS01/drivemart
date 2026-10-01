@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Engine } from '../game/Engine';
 import { useGame } from '../state/gameStore';
 import { useUi } from '../state/uiStore';
-import { loadSettings } from './modals/SettingsModal';
+import { applySettings, loadSettings } from '../state/settings';
 
 /** Monta o motor do jogo num canvas de tela cheia. */
 export function GameCanvas({ cityId }: { cityId: string }) {
@@ -26,11 +26,10 @@ export function GameCanvas({ cityId }: { cityId: string }) {
           return;
         }
         engine = e;
-        const saved = loadSettings();
-        e.setGraphics(saved.graphics);
-        e.setNight(saved.night);
+        const settings = loadSettings();
+        applySettings(e, settings);
         e.start();
-        set({ engine: e, phase: 'ready', ...saved });
+        set({ engine: e, phase: 'ready', settings });
         (window as unknown as { __drivemart?: Engine }).__drivemart = e;
       })
       .catch((err: unknown) => {

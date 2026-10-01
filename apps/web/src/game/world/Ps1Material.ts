@@ -15,7 +15,14 @@ export interface WorldUniforms {
   night: { value: number };
   time: { value: number };
   dither: { value: number };
+  /** Posição e rumo do carro (faróis à noite). */
+  carPos: { value: THREE.Vector3 };
+  carDir: { value: THREE.Vector2 };
+  /** Lâmpadas de poste mais próximas (luz no chão à noite). */
+  lamps: { value: THREE.Vector3[] };
 }
+
+export const LAMP_COUNT = 8;
 
 export function createTextureArray(data: Uint8Array): THREE.DataArrayTexture {
   const tex = new THREE.DataArrayTexture(data, LAYER_SIZE, LAYER_SIZE, LAYER_NAMES.length);
@@ -43,6 +50,9 @@ export function createWorldUniforms(map: THREE.DataArrayTexture): WorldUniforms 
     night: { value: 0 },
     time: { value: 0 },
     dither: { value: 1 },
+    carPos: { value: new THREE.Vector3() },
+    carDir: { value: new THREE.Vector2(0, 1) },
+    lamps: { value: Array.from({ length: LAMP_COUNT }, () => new THREE.Vector3(1e6, 0, 1e6)) },
   };
 }
 
@@ -56,6 +66,9 @@ const COMMON_FRAG = /* glsl */ `
   uniform float night;
   uniform float time;
   uniform float dither;
+  uniform vec3 carPos;
+  uniform vec2 carDir;
+  uniform vec3 lamps[${LAMP_COUNT}];
   in vec3 vUvW;
   in float vLayer;
   in vec3 vTint;
@@ -91,9 +104,27 @@ const COMMON_FRAG = /* glsl */ `
       vec3 moon = col * vec3(0.24, 0.27, 0.42);
       vec3 lit = moon;
       if (glow) {
-        float on = step(0.42, hash12(floor(vWorld.xz / 3.2) + floor(vWorld.y / 3.2) * 17.0));
+        // Janelas acesas ao acaso; faróis, lanternas e lâmpadas de poste sempre acesos.
+        bool always = abs(layer - ${LAYER.carFront.toFixed(1)}) < 0.5
+          || abs(layer - ${LAYER.carRear.toFixed(1)}) < 0.5
+          || abs(layer - ${LAYER.lamp.toFixed(1)}) < 0.5;
+        float on = always ? 1.0 : step(0.42, hash12(floor(vWorld.xz / 3.2) + floor(vWorld.y / 3.2) * 17.0));
         lit = mix(moon, tex.rgb * vec3(1.35, 1.2, 0.85) + vec3(0.18, 0.14, 0.04), on);
       }
+      // Faróis: um cone de luz à frente do carro, mais forte perto do chão.
+      vec2 d = vWorld.xz - carPos.xz;
+      float along = dot(d, carDir);
+      float side = abs(d.x * carDir.y - d.y * carDir.x);
+      float beam = step(0.5, along) * (1.0 - smoothstep(12.0, 42.0, along))
+        * (1.0 - smoothstep(0.9 + along * 0.3, 1.8 + along * 0.42, side))
+        * (1.0 - smoothstep(1.0, 4.5, vWorld.y - carPos.y));
+      // Postes: círculos de luz amarelada embaixo das lâmpadas mais próximas.
+      float pools = 0.0;
+      for (int i = 0; i < ${LAMP_COUNT}; i++) {
+        vec3 l = lamps[i];
+        pools += (1.0 - smoothstep(2.5, 9.0, length(vWorld.xz - l.xz))) * step(vWorld.y, l.y - 1.5);
+      }
+      lit += col * (vec3(1.0, 0.94, 0.78) * beam * 0.9 + vec3(1.0, 0.78, 0.48) * min(pools, 1.0) * 0.6);
       col = mix(col, lit, night);
     }
     float fog = smoothstep(fogNear, fogFar, vFogDepth);
@@ -116,7 +147,11 @@ const WORLD_VERT = /* glsl */ `
   out vec3 vWorld;
 
   void main() {
+  #ifdef USE_INSTANCING
+    vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
+  #else
     vec4 world = modelMatrix * vec4(position, 1.0);
+  #endif
     vec4 mv = viewMatrix * world;
     vec4 clip = projectionMatrix * mv;
     if (snapRes.x > 0.0 && clip.w > 0.0) {

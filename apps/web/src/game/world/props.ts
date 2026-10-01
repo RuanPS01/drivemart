@@ -81,3 +81,26 @@ export const POLE_PROPS: Record<string, { r: number; h: number }> = {
   trafficlight: { r: 0.18, h: 5.6 },
   mastlight: { r: 0.35, h: 16.5 },
 };
+
+export interface SmashSpec {
+  /** Raio de colisão no chão (m). */
+  r: number;
+  /** Como fica depois de cair: deitado de lado ou em pé. */
+  lie: 'side' | 'flat';
+  /** Altura da origem do modelo quando deitado. */
+  lift: number;
+  /** Peso relativo (freia um pouco o carro). */
+  mass: number;
+}
+
+/** Objetos que voam quando o carro bate, como no Driver. Os demais props continuam fixos nos chunks. */
+export const SMASHABLE: Record<string, SmashSpec> = {
+  cone: { r: 0.22, lie: 'side', lift: 0.2, mass: 0.2 },
+  box: { r: 0.4, lie: 'flat', lift: 0, mass: 0.5 },
+  barrel: { r: 0.32, lie: 'side', lift: 0.3, mass: 1 },
+  bin: { r: 0.28, lie: 'side', lift: 0.27, mass: 0.5 },
+  chair: { r: 0.3, lie: 'side', lift: 0.22, mass: 0.2 },
+  table: { r: 0.5, lie: 'side', lift: 0.45, mass: 0.5 },
+  umbrella: { r: 0.35, lie: 'side', lift: 1.25, mass: 0.4 },
+  barrier: { r: 0.6, lie: 'side', lift: 0.12, mass: 1 },
+};

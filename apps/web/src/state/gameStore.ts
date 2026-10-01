@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import type { Engine } from '../game/Engine';
 import type { RouteState } from '../game/nav/RouteGuide';
+import { loadSettings, type Settings } from './settings';
 
-export type GraphicsMode = 'ps1' | 'sharp';
+export type { GraphicsMode } from '../game/Engine';
 
 export interface GameState {
   phase: 'loading' | 'ready' | 'error';
@@ -14,8 +15,7 @@ export interface GameState {
   heading: number;
   position: [number, number];
   cameraMode: string;
-  night: boolean;
-  graphics: GraphicsMode;
+  settings: Settings;
   route: RouteState | null;
   set: (partial: Partial<GameState>) => void;
 }
@@ -30,8 +30,7 @@ export const useGame = create<GameState>((set) => ({
   heading: 0,
   position: [0, 0],
   cameraMode: 'chase',
-  night: false,
-  graphics: 'ps1',
+  settings: loadSettings(),
   route: null,
   set: (partial) => set(partial),
 }));

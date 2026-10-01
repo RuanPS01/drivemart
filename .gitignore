@@ -19,3 +19,4 @@ apps/web/public/__samples__/
 functions/.env.local
 firestore-debug.log
 *-debug.log
+test-results/

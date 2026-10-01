@@ -123,6 +123,19 @@ export function AuthModal() {
         )}
         {error && <p className="form-error">{error}</p>}
         {info && <p className="form-info">{info}</p>}
+        {tab === 'signup' && (
+          <p className="muted small">
+            Ao criar a conta você aceita os{' '}
+            <a href="/termos" target="_blank" rel="noopener">
+              Termos de Uso
+            </a>{' '}
+            e a{' '}
+            <a href="/privacidade" target="_blank" rel="noopener">
+              Política de Privacidade
+            </a>
+            .
+          </p>
+        )}
         <button className="btn primary" type="submit" disabled={busy}>
           {busy
             ? 'Aguarde...'

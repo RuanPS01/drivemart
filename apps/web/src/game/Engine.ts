@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import type { CityLayout } from '@drivemart/shared';
+import { PROP_STRIDE, type CityLayout } from '@drivemart/shared';
 import { loadOverrides, paintLayers } from './art/TextureLibrary';
+import { GameAudio } from './audio/GameAudio';
 import { CameraRig } from './camera/CameraRig';
 import { Input, type InputAction } from './input/Input';
 import { RoadGraph } from './nav/RoadGraph';
@@ -20,11 +21,21 @@ import {
   createTreeMaterial,
   createWorldMaterial,
   createWorldUniforms,
+  LAMP_COUNT,
   type WorldUniforms,
 } from './world/Ps1Material';
+import { SmashProps } from './world/SmashProps';
 import { createBackdrop, createSky, SKY } from './world/Sky';
 
 export type GraphicsMode = 'ps1' | 'sharp';
+export type ViewDistance = 'near' | 'normal' | 'far';
+
+/** Raio de desenho e neblina para cada distância de visão. */
+const VIEW: Record<ViewDistance, { radius: number; fogNear: number; fogFar: number }> = {
+  near: { radius: 300, fogNear: 90, fogFar: 290 },
+  normal: { radius: 460, fogNear: 140, fogFar: 440 },
+  far: { radius: 640, fogNear: 200, fogFar: 620 },
+};
 
 export interface EngineEvents {
   progress?: (p: number, message: string) => void;
@@ -64,6 +75,11 @@ export class Engine {
   private physicsLive = false;
   private disposed = false;
   private graphics: GraphicsMode = 'ps1';
+  private smash!: SmashProps;
+  readonly audio = new GameAudio();
+  private lamps: Float32Array = new Float32Array(0);
+  private lampTimer = 0;
+  private hold: { x: number; y: number; z: number; heading: number; since: number } | null = null;
   private resizeObserver: ResizeObserver;
   readonly extraUpdaters = new Set<(dt: number) => void>();
 
@@ -128,6 +144,10 @@ export class Engine {
     this.scene.add(this.streamer.root);
     this.car = new Car(this.physics, world, [1.6, 0.22, 0.18], this.layout.spawn);
     this.scene.add(this.car.object);
+    this.smash = new SmashProps(this.layout, world);
+    this.smash.onSmash = (s) => this.audio.smash(s);
+    this.scene.add(this.smash.group);
+    this.lamps = collectLamps(this.layout);
     this.markers = new ZoneMarkers(this.parcels);
     this.facades = new FacadeManager(this.parcels, this.uniforms);
     this.guide = new RouteGuide(this.roads);
@@ -177,7 +197,10 @@ export class Engine {
   teleport(x: number, y: number, z: number, heading: number): void {
     this.car.place(x, y, z, heading);
     this.rig.snap();
-    this.streamer.update(new THREE.Vector3(x, y, z));
+    const target = new THREE.Vector3(x, y, z);
+    this.streamer.update(target);
+    // Segura o carro no lugar até o chão da região ter colisão (senão ele cai antes de carregar).
+    this.hold = this.streamer.physicsReady(target) ? null : { x, y, z, heading, since: performance.now() };
   }
 
   get carPosition(): THREE.Vector3 {
@@ -230,6 +253,18 @@ export class Engine {
 
   setInputEnabled(enabled: boolean): void {
     this.input.enabled = enabled;
+    this.audio.setDucked(!enabled);
+  }
+
+  setVolume(volume: number): void {
+    this.audio.setVolume(volume);
+  }
+
+  setViewDistance(level: ViewDistance): void {
+    const v = VIEW[level] ?? VIEW.normal;
+    this.streamer.opts.renderRadius = v.radius;
+    this.uniforms.fogNear.value = v.fogNear;
+    this.uniforms.fogFar.value = v.fogFar;
   }
 
   setNight(night: boolean): void {
@@ -276,7 +311,20 @@ export class Engine {
 
   private frame(dt: number): void {
     const input = this.input.read();
-    if (this.physicsLive) {
+    if (this.hold) {
+      const h = this.hold;
+      if (
+        this.streamer.physicsReady(new THREE.Vector3(h.x, h.y, h.z)) ||
+        performance.now() - h.since > 15000
+      ) {
+        this.hold = null;
+        this.car.place(h.x, h.y, h.z, h.heading);
+      } else {
+        this.car.place(h.x, h.y, h.z, h.heading);
+        this.acc = 0;
+      }
+    }
+    if (this.physicsLive && !this.hold) {
       this.acc += dt;
       let steps = 0;
       while (this.acc >= STEP && steps < 5) {
@@ -289,6 +337,23 @@ export class Engine {
       if (steps === 5) this.acc = 0;
       const p = this.car.position;
       if (p.y < -12) this.resetToRoad();
+
+      // Objetos de rua que voam ao bater; a batida freia um pouco o carro.
+      const lv = this.car.body.linvel();
+      const vel = { x: lv.x, y: lv.y, z: lv.z };
+      this.smash.update({ position: p, heading: this.car.heading, velocity: vel }, dt);
+      if (vel.x !== lv.x || vel.z !== lv.z) this.car.body.setLinvel(vel, true);
+
+      const impact = this.car.takeImpact();
+      if (impact > 1.2) this.audio.impact((impact - 1.2) / 7);
+      const skid =
+        Math.max(0, (Math.abs(this.car.lateral) - 2.5) / 5) +
+        (input.handbrake && Math.abs(this.car.speed) > 4 ? 0.5 : 0);
+      this.audio.update({
+        speed: this.car.speed,
+        throttle: this.input.enabled ? Math.max(input.throttle, input.brake * 0.4) : 0,
+        skid,
+      });
     }
     this.car.sync(this.physicsLive ? this.acc / STEP : 1);
     const pos = this.car.object.position;
@@ -311,6 +376,13 @@ export class Engine {
     this.sky.position.copy(this.camera.position);
     this.backdrop.position.set(this.camera.position.x, 0, this.camera.position.z);
     this.uniforms.time.value += dt;
+    this.uniforms.carPos.value.copy(pos);
+    this.uniforms.carDir.value.set(Math.sin(this.car.heading), Math.cos(this.car.heading));
+    this.lampTimer -= dt;
+    if (this.uniforms.night.value > 0 && this.lampTimer <= 0) {
+      this.lampTimer = 0.3;
+      this.updateLamps(pos);
+    }
     for (const u of this.extraUpdaters) u(dt);
     this.renderer.render(this.scene, this.camera);
 
@@ -326,8 +398,33 @@ export class Engine {
     }
   }
 
+  /** Escolhe as lâmpadas de poste mais próximas para iluminar o chão à noite. */
+  private updateLamps(pos: THREE.Vector3): void {
+    const best: [number, number][] = [];
+    const l = this.lamps;
+    for (let i = 0; i < l.length; i += 3) {
+      const dx = l[i]! - pos.x,
+        dz = l[i + 2]! - pos.z;
+      const d = dx * dx + dz * dz;
+      if (d > 120 * 120) continue;
+      if (best.length < LAMP_COUNT) best.push([d, i]);
+      else {
+        let worst = 0;
+        for (let k = 1; k < best.length; k++) if (best[k]![0] > best[worst]![0]) worst = k;
+        if (d < best[worst]![0]) best[worst] = [d, i];
+      }
+    }
+    const out = this.uniforms.lamps.value;
+    for (let k = 0; k < LAMP_COUNT; k++) {
+      const b = best[k];
+      if (b) out[k]!.set(l[b[1]]!, l[b[1] + 1]!, l[b[1] + 2]!);
+      else out[k]!.set(1e6, 0, 1e6);
+    }
+  }
+
   dispose(): void {
     this.disposed = true;
+    this.audio.dispose();
     cancelAnimationFrame(this.raf);
     this.resizeObserver.disconnect();
     for (const u of this.unsubs) u();
@@ -337,4 +434,20 @@ export class Engine {
     this.car.dispose();
     this.renderer.dispose();
   }
+}
+
+/** Posição das lâmpadas dos postes (x, y, z) a partir dos props do traçado. */
+function collectLamps(layout: CityLayout): Float32Array {
+  const out: number[] = [];
+  for (let i = 0; i < layout.props.length; i += PROP_STRIDE) {
+    const type = layout.propTypes[layout.props[i]!];
+    const x = layout.props[i + 1]!,
+      y = layout.props[i + 2]!,
+      z = layout.props[i + 3]!,
+      rot = layout.props[i + 4]!;
+    // Mesma rotação de PROP_BUILDERS: o braço do poste aponta para +X local.
+    if (type === 'streetlight') out.push(x + Math.cos(rot) * 2.3, y + 8.5, z - Math.sin(rot) * 2.3);
+    else if (type === 'mastlight') out.push(x, y + 16.7, z);
+  }
+  return new Float32Array(out);
 }

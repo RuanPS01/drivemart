@@ -1,11 +1,18 @@
-import RAPIER from '@dimforge/rapier3d-compat';
+import type RAPIER from '@dimforge/rapier3d-compat';
 import type { ChunkColliders } from '../world/cityGen';
 
 export type Rapier = typeof RAPIER;
 
 // Inicializar o WASM duas vezes troca a memória do módulo e invalida mundos já criados
 // (acontece com o modo estrito do React montando o jogo duas vezes). Inicializa uma única vez.
-let rapierReady: Promise<void> | null = null;
+// O Rapier (com o WASM embutido, cerca de 4 MB) vem num pedaço separado, baixado em paralelo com o mapa.
+let rapierReady: Promise<Rapier> | null = null;
+
+async function loadRapier(): Promise<Rapier> {
+  const mod = (await import('@dimforge/rapier3d-compat')).default;
+  await mod.init();
+  return mod;
+}
 
 /** Mundo físico (Rapier) com os colisores estáticos da cidade agrupados por chunk. */
 export class Physics {
@@ -18,9 +25,8 @@ export class Physics {
   }
 
   static async create(): Promise<Physics> {
-    rapierReady ??= RAPIER.init();
-    await rapierReady;
-    return new Physics(RAPIER);
+    rapierReady ??= loadRapier();
+    return new Physics(await rapierReady);
   }
 
   hasChunk(key: string): boolean {
