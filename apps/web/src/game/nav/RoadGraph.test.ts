@@ -26,3 +26,30 @@ describe('RoadGraph', () => {
     expect(isolated.route(0, 1)).toEqual([]);
   });
 });
+
+describe('RoadGraph.fromLattice', () => {
+  it('liga as células de pista vizinhas e encontra rota contornando o quarteirão', () => {
+    // Grade 4 x 3 com um "quarteirão" no meio (células (1,1) e (2,1) não são pista).
+    const cols = 4,
+      rows = 3;
+    const road = [1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1];
+    const bits = new Uint8Array(2);
+    road.forEach((v, k) => v && (bits[k >> 3]! |= 1 << (k & 7)));
+    const count = road.filter(Boolean).length;
+    const g = RoadGraph.fromLattice({
+      cell: 5,
+      minX: 0,
+      minZ: 0,
+      cols,
+      rows,
+      mask: Buffer.from(bits).toString('base64'),
+      heights: Buffer.from(new Int8Array(count).buffer).toString('base64'),
+    });
+    expect(g.count).toBe(10);
+    const a = g.nearest(7.5, 7.5 - 5); // célula (1,0)
+    const b = g.nearest(7.5, 12.5); // célula (1,2)
+    const path = g.route(a, b);
+    expect(path.length).toBeGreaterThanOrEqual(3);
+    for (const n of path) expect([g.z(n) !== 7.5 || g.x(n) === 2.5 || g.x(n) === 17.5]).toEqual([true]);
+  });
+});

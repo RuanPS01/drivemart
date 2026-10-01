@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Engine } from '../game/Engine';
 import { useGame } from '../state/gameStore';
+import { useUi } from '../state/uiStore';
+import { loadSettings } from './modals/SettingsModal';
 
 /** Monta o motor do jogo num canvas de tela cheia. */
 export function GameCanvas({ cityId }: { cityId: string }) {
@@ -15,6 +17,8 @@ export function GameCanvas({ cityId }: { cityId: string }) {
     Engine.create(canvas, cityId, {
       progress: (progress, message) => set({ progress, message }),
       hud: (h) => set(h),
+      route: (route) => set({ route }),
+      arrived: () => useUi.getState().toast('Você chegou ao destino.', 'ok'),
     })
       .then((e) => {
         if (cancelled) {
@@ -22,8 +26,11 @@ export function GameCanvas({ cityId }: { cityId: string }) {
           return;
         }
         engine = e;
+        const saved = loadSettings();
+        e.setGraphics(saved.graphics);
+        e.setNight(saved.night);
         e.start();
-        set({ engine: e, phase: 'ready' });
+        set({ engine: e, phase: 'ready', ...saved });
         (window as unknown as { __drivemart?: Engine }).__drivemart = e;
       })
       .catch((err: unknown) => {

@@ -78,12 +78,22 @@ export interface CityLayout {
   props: number[];
   /** Árvores: tipo, x, y, z, altura (5 números por árvore). */
   trees: number[];
-  roads: {
-    /** x, y, z por nó. */
-    nodes: number[];
-    /** Pares de índices. */
-    edges: number[];
-  };
+  /** Grade de ruas (células de pista), usada no GPS e para voltar à rua. */
+  roads: RoadLattice;
+}
+
+/**
+ * Grade de pistas: bitmap linha a linha (1 bit por célula, base64) e altura de cada célula de pista
+ * em meios metros (Int8 em base64, na mesma ordem das células marcadas).
+ */
+export interface RoadLattice {
+  cell: number;
+  minX: number;
+  minZ: number;
+  cols: number;
+  rows: number;
+  mask: string;
+  heights: string;
 }
 
 export const WALL_STRIDE = 9;
@@ -104,4 +114,63 @@ export function regionKey(cityId: string, x: number, z: number): string {
 export function lotAnchor(lot: LayoutLot): [number, number] {
   if (lot.z) return [lot.z[0], lot.z[1]];
   return [(lot.f[0] + lot.f[2]) / 2, (lot.f[1] + lot.f[3]) / 2];
+}
+
+export interface LatticeNodes {
+  /** Coordenadas do centro de cada célula de pista. */
+  x: Float32Array;
+  y: Float32Array;
+  z: Float32Array;
+  col: Int32Array;
+  row: Int32Array;
+  /** Índice do nó na célula (coluna, linha) ou 0 se não for pista (índices começam em 1). */
+  at: (col: number, row: number) => number;
+}
+
+function fromBase64(b64: string): Uint8Array {
+  if (typeof atob === 'function') {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  return Uint8Array.from(
+    (globalThis as unknown as { Buffer: { from(s: string, e: string): Uint8Array } }).Buffer.from(
+      b64,
+      'base64',
+    ),
+  );
+}
+
+/** Decodifica a grade de pistas em nós (centros das células marcadas). */
+export function latticeNodes(l: RoadLattice): LatticeNodes {
+  const bits = fromBase64(l.mask);
+  const hs = new Int8Array(fromBase64(l.heights).buffer);
+  const index = new Int32Array(l.cols * l.rows);
+  const xs: number[] = [],
+    ys: number[] = [],
+    zs: number[] = [],
+    cs: number[] = [],
+    rs: number[] = [];
+  let n = 0;
+  for (let k = 0; k < l.cols * l.rows; k++) {
+    if (!(bits[k >> 3]! & (1 << (k & 7)))) continue;
+    const c = k % l.cols,
+      r = Math.floor(k / l.cols);
+    xs.push(l.minX + (c + 0.5) * l.cell);
+    zs.push(l.minZ + (r + 0.5) * l.cell);
+    ys.push((hs[n] ?? 0) / 2);
+    cs.push(c);
+    rs.push(r);
+    n++;
+    index[k] = n;
+  }
+  return {
+    x: Float32Array.from(xs),
+    y: Float32Array.from(ys),
+    z: Float32Array.from(zs),
+    col: Int32Array.from(cs),
+    row: Int32Array.from(rs),
+    at: (c, r) => (c < 0 || r < 0 || c >= l.cols || r >= l.rows ? 0 : index[r * l.cols + c]!),
+  };
 }

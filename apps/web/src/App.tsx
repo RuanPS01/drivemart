@@ -11,6 +11,8 @@ import { TopBar } from './ui/hud/TopBar';
 import { TouchControls } from './ui/hud/TouchControls';
 import { ZoneCard } from './ui/hud/ZoneCard';
 import { ModalHost } from './ui/modals/ModalHost';
+import { Minimap } from './ui/map/Minimap';
+import { RouteBanner } from './ui/hud/RouteBanner';
 
 export function App() {
   const ready = useGame((s) => s.phase === 'ready');
@@ -35,6 +37,8 @@ export function App() {
         <div className="hud">
           <TopBar />
           <Speedometer />
+          <Minimap />
+          <RouteBanner />
           <ControlsHelp />
           <TouchControls />
           <ZoneCard />

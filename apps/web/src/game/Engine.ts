@@ -4,6 +4,7 @@ import { loadOverrides, paintLayers } from './art/TextureLibrary';
 import { CameraRig } from './camera/CameraRig';
 import { Input, type InputAction } from './input/Input';
 import { RoadGraph } from './nav/RoadGraph';
+import { RouteGuide, type RouteState } from './nav/RouteGuide';
 import { FacadeManager } from './parcels/FacadeManager';
 import { ParcelIndex } from './parcels/ParcelIndex';
 import { ZoneDetector } from './parcels/ZoneDetector';
@@ -27,6 +28,8 @@ export type GraphicsMode = 'ps1' | 'sharp';
 
 export interface EngineEvents {
   progress?: (p: number, message: string) => void;
+  route?: (r: RouteState | null) => void;
+  arrived?: (lotId: string) => void;
   hud?: (h: { speedKmh: number; heading: number; position: [number, number]; cameraMode: string }) => void;
   action?: (a: InputAction) => void;
 }
@@ -43,6 +46,8 @@ export class Engine {
   readonly parcels: ParcelIndex;
   private zones: ZoneDetector;
   private markers!: ZoneMarkers;
+  private guide!: RouteGuide;
+  private lastRoute: RouteState | null = null;
   private facades!: FacadeManager;
   private cityState: CityStateSync;
   private unsubs: (() => void)[] = [];
@@ -78,7 +83,7 @@ export class Engine {
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.3, 3000);
     this.input = new Input();
     this.rig = new CameraRig(this.camera);
-    this.roads = new RoadGraph(layout.roads.nodes, layout.roads.edges);
+    this.roads = RoadGraph.fromLattice(layout.roads);
     this.parcels = new ParcelIndex(layout.lots);
     this.zones = new ZoneDetector(this.parcels);
     this.cityState = new CityStateSync(layout.cityId);
@@ -125,7 +130,8 @@ export class Engine {
     this.scene.add(this.car.object);
     this.markers = new ZoneMarkers(this.parcels);
     this.facades = new FacadeManager(this.parcels, this.uniforms);
-    this.scene.add(this.markers.group, this.facades.group);
+    this.guide = new RouteGuide(this.roads);
+    this.scene.add(this.markers.group, this.facades.group, this.guide.group);
     this.facades.sync(useParcels.getState().entries);
     this.unsubs.push(
       useParcels.subscribe((st, prev) => {
@@ -158,7 +164,7 @@ export class Engine {
   /** Recoloca o carro na rua mais próxima, alinhado com ela. */
   resetToRoad(): void {
     const p = this.car.position;
-    const n = this.roads.nearest(p.x, p.z);
+    const n = this.roads.nearest(p.x, p.z, 600, true);
     if (n < 0) return;
     this.teleport(
       this.roads.x(n),
@@ -186,9 +192,26 @@ export class Engine {
     return this.car.speed;
   }
 
-  /** Destaca uma zona como destino (GPS). */
-  setTargetZone(lotId: string | null): void {
-    this.markers.target = lotId;
+  /** Traça (ou limpa, com nulo) a rota de GPS até a zona de um lote. */
+  setRoute(lotId: string | null): boolean {
+    const lot = lotId ? this.parcels.byId.get(lotId) : undefined;
+    if (!lot) {
+      this.guide.clear();
+      this.markers.target = null;
+      this.events.route?.(null);
+      return false;
+    }
+    const ok = this.guide.set(lot, this.car.position);
+    this.markers.target = ok ? lot.id : null;
+    if (ok) {
+      const target = lot.id;
+      this.guide.onArrive = () => {
+        this.markers.target = null;
+        this.events.arrived?.(target);
+        this.events.route?.(null);
+      };
+    }
+    return ok;
   }
 
   /** Teleporta para a zona de ação de um lote, alinhado à rua. */
@@ -277,6 +300,14 @@ export class Engine {
     this.markers.update(pos.x, pos.z, dt, parcelState.entries, useAuth.getState().user?.uid ?? null);
     this.facades.update(pos.x, pos.z, dt);
     this.cityState.update(pos.x, pos.z);
+    const route = this.guide.update(pos, dt);
+    if (
+      route?.lotId !== this.lastRoute?.lotId ||
+      (route && Math.abs(route.distance - (this.lastRoute?.distance ?? 0)) > 5)
+    ) {
+      this.lastRoute = route;
+      this.events.route?.(route);
+    }
     this.sky.position.copy(this.camera.position);
     this.backdrop.position.set(this.camera.position.x, 0, this.camera.position.z);
     this.uniforms.time.value += dt;

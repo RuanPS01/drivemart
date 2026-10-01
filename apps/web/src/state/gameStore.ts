@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Engine } from '../game/Engine';
+import type { RouteState } from '../game/nav/RouteGuide';
 
 export type GraphicsMode = 'ps1' | 'sharp';
 
@@ -15,6 +16,7 @@ export interface GameState {
   cameraMode: string;
   night: boolean;
   graphics: GraphicsMode;
+  route: RouteState | null;
   set: (partial: Partial<GameState>) => void;
 }
 
@@ -30,5 +32,6 @@ export const useGame = create<GameState>((set) => ({
   cameraMode: 'chase',
   night: false,
   graphics: 'ps1',
+  route: null,
   set: (partial) => set(partial),
 }));

@@ -2,6 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { latticeNodes } from '@drivemart/shared';
 import { runPipeline, type CityConfig } from '../src/pipeline';
 import { fixtureVrml } from './fixture';
 
@@ -48,10 +49,12 @@ describe('runPipeline (cidade de teste)', () => {
     expect(again.layout.lots[0]!.id).toBe(layout.lots[0]!.id);
   });
 
-  it('registra props, grafo de ruas e ponto de partida na rua', () => {
+  it('registra props, grade de pistas e ponto de partida na rua', () => {
     expect(layout.props).toHaveLength(5);
-    expect(layout.roads.nodes.length / 3).toBe(9);
-    expect(layout.roads.edges.length / 2).toBeGreaterThanOrEqual(8);
-    expect(Math.abs(layout.spawn[0])).toBeLessThan(3);
+    const nodes = latticeNodes(layout.roads);
+    expect(nodes.x.length).toBeGreaterThan(8);
+    // Células de 5 m sobre a rua de 6 m: o centro fica a no máximo meia célula da borda (|x| <= 3 + 2,5).
+    for (const x of nodes.x) expect(Math.abs(x)).toBeLessThanOrEqual(5.5);
+    expect(Math.abs(layout.spawn[0])).toBeLessThanOrEqual(5.5);
   });
 });

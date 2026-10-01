@@ -1,68 +1,51 @@
-import type { ModelClass } from './classify';
-import type { Scene } from './scene';
-import { forEachWorldTri } from './world';
+import type { RoadLattice } from '@drivemart/shared';
+import { GROUND_MATERIALS } from './classify';
+import type { Grid } from './raster';
 
-export interface RoadGraph {
-  /** x, y, z por nó. */
-  nodes: number[];
-  /** Pares de índices de nós. */
-  edges: number[];
-}
+const CODE_ROAD = GROUND_MATERIALS.indexOf('road') + 1;
+// Piso de praça no nível da rua aparece no meio de cruzamentos (peças claras): também é transitável.
+const CODE_PLAZA = GROUND_MATERIALS.indexOf('plaza') + 1;
 
-/** Grafo de ruas: um nó por peça de rua (centro da superfície), arestas entre peças vizinhas. */
-export function buildRoadGraph(scene: Scene, classes: Map<string, ModelClass>): RoadGraph {
-  type N = { x: number; y: number; z: number; size: number };
-  const nodes: N[] = [];
-  for (const inst of scene.instances) {
-    const cls = classes.get(inst.model);
-    if (!cls || cls.kind !== 'ground' || cls.mat !== 'road') continue;
-    let ax = 0,
-      ay = 0,
-      az = 0,
-      wsum = 0;
-    let x0 = Infinity,
-      x1 = -Infinity,
-      z0 = Infinity,
-      z1 = -Infinity;
-    forEachWorldTri(scene, inst, null, (t) => {
-      if (t.ny < 0.5) return;
-      const p = t.p;
-      ax += ((p[0]! + p[3]! + p[6]!) / 3) * t.area;
-      ay += ((p[1]! + p[4]! + p[7]!) / 3) * t.area;
-      az += ((p[2]! + p[5]! + p[8]!) / 3) * t.area;
-      wsum += t.area;
-      x0 = Math.min(x0, p[0]!, p[3]!, p[6]!);
-      x1 = Math.max(x1, p[0]!, p[3]!, p[6]!);
-      z0 = Math.min(z0, p[2]!, p[5]!, p[8]!);
-      z1 = Math.max(z1, p[2]!, p[5]!, p[8]!);
-    });
-    if (wsum < 1) continue;
-    nodes.push({ x: ax / wsum, y: ay / wsum, z: az / wsum, size: Math.max(x1 - x0, z1 - z0) });
-  }
-
-  const cell = 12;
-  const hash = new Map<string, number[]>();
-  nodes.forEach((n, i) => {
-    const k = `${Math.floor(n.x / cell)},${Math.floor(n.z / cell)}`;
-    let l = hash.get(k);
-    if (!l) hash.set(k, (l = []));
-    l.push(i);
-  });
-  const edges: number[] = [];
-  nodes.forEach((n, i) => {
-    const ci = Math.floor(n.x / cell),
-      cj = Math.floor(n.z / cell);
-    for (let di = -1; di <= 1; di++) {
-      for (let dj = -1; dj <= 1; dj++) {
-        for (const j of hash.get(`${ci + di},${cj + dj}`) ?? []) {
-          if (j <= i) continue;
-          const m = nodes[j]!;
-          const d = Math.hypot(m.x - n.x, m.z - n.z);
-          if (d <= 0.62 * (n.size + m.size) && Math.abs(m.y - n.y) < 1.5) edges.push(i, j);
+/**
+ * Grade de pistas a partir da máscara de asfalto (1 m): uma célula de `cell` metros é pista
+ * quando ao menos 40% das subcélulas são asfalto (ou piso no nível da rua). Guarda o bitmap e a altura mediana de cada célula.
+ */
+export function buildRoadLattice(grid: Grid, cell = 5): RoadLattice {
+  const sub = Math.round(cell / grid.cell);
+  const cols = Math.ceil(grid.w / sub);
+  const rows = Math.ceil(grid.h / sub);
+  const bits = new Uint8Array(Math.ceil((cols * rows) / 8));
+  const heights: number[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let road = 0,
+        total = 0;
+      const hs: number[] = [];
+      for (let j = r * sub; j < Math.min(grid.h, (r + 1) * sub); j++)
+        for (let i = c * sub; i < Math.min(grid.w, (c + 1) * sub); i++) {
+          total++;
+          const idx = j * grid.w + i;
+          const m = grid.mat[idx];
+          if (m === CODE_ROAD || (m === CODE_PLAZA && grid.height[idx]! < 1)) {
+            road++;
+            hs.push(grid.height[idx]!);
+          }
         }
-      }
+      if (!total || road / total < 0.4) continue;
+      const k = r * cols + c;
+      bits[k >> 3]! |= 1 << (k & 7);
+      hs.sort((a, b) => a - b);
+      // Decímetros para meios metros, limitado ao Int8.
+      heights.push(Math.max(-128, Math.min(127, Math.round(hs[hs.length >> 1]! / 5))));
     }
-  });
-  const r2 = (v: number) => Math.round(v * 100) / 100;
-  return { nodes: nodes.flatMap((n) => [r2(n.x), r2(n.y), r2(n.z)]), edges };
+  }
+  return {
+    cell,
+    minX: grid.minX,
+    minZ: grid.minZ,
+    cols,
+    rows,
+    mask: Buffer.from(bits).toString('base64'),
+    heights: Buffer.from(Int8Array.from(heights).buffer).toString('base64'),
+  };
 }

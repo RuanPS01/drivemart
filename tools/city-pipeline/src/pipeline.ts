@@ -3,9 +3,11 @@ import { join } from 'node:path';
 import {
   GROUND_MATERIAL_NAMES,
   LAYOUT_VERSION,
+  latticeNodes,
   type CityLayout,
   type LayoutChunk,
   type LayoutLot,
+  type RoadLattice,
 } from '@drivemart/shared';
 import { classifyModel, GROUND_MATERIALS, PROP_TYPES, TREE_TYPES, type ModelClass } from './classify';
 import { worldSegments, type WorldSeg } from './facades';
@@ -14,7 +16,7 @@ import { LotIds } from './ids';
 import { buildLots, type Lot, type Wall } from './lots';
 import { round2 } from './math';
 import { collectProps } from './props';
-import { buildRoadGraph, type RoadGraph } from './roads';
+import { buildRoadLattice } from './roads';
 import { buildScene, type Scene } from './scene';
 import { parseVrml } from './vrml/parser';
 import { TriangleColors } from './world';
@@ -70,16 +72,19 @@ function dedupeSegments(segs: WorldSeg[]): WorldSeg[] {
   return out;
 }
 
-function pickSpawn(graph: RoadGraph, lots: Lot[], near?: [number, number]): [number, number, number, number] {
-  const n = graph.nodes.length / 3;
+function pickSpawn(
+  lattice: RoadLattice,
+  lots: Lot[],
+  near?: [number, number],
+): [number, number, number, number] {
+  const nodes = latticeNodes(lattice);
+  const zoned = lots.filter((l) => l.zone);
   let best = 0,
     bestScore = -Infinity;
-  const zoned = lots.filter((l) => l.zone);
-  for (let i = 0; i < n; i += near ? 1 : 7) {
-    const x = graph.nodes[i * 3]!,
-      y = graph.nodes[i * 3 + 1]!,
-      z = graph.nodes[i * 3 + 2]!;
-    if (Math.abs(y) > 0.5) continue;
+  for (let i = 0; i < nodes.x.length; i += near ? 1 : 5) {
+    const x = nodes.x[i]!,
+      z = nodes.z[i]!;
+    if (Math.abs(nodes.y[i]!) > 0.5) continue;
     let score: number;
     if (near) score = -Math.hypot(x - near[0], z - near[1]);
     else {
@@ -91,26 +96,26 @@ function pickSpawn(graph: RoadGraph, lots: Lot[], near?: [number, number]): [num
       best = i;
     }
   }
-  const x = graph.nodes[best * 3]!,
-    y = graph.nodes[best * 3 + 1]!,
-    z = graph.nodes[best * 3 + 2]!;
-  // Rumo: direção da aresta vizinha mais longa.
+  const x = nodes.x[best]!,
+    z = nodes.z[best]!;
+  // Rumo: direção com a maior sequência de pista à frente.
   let heading = 0,
-    far = 0;
-  for (let e = 0; e < graph.edges.length; e += 2) {
-    const a = graph.edges[e]!,
-      b = graph.edges[e + 1]!;
-    if (a !== best && b !== best) continue;
-    const o = (a === best ? b : a) * 3;
-    const dx = graph.nodes[o]! - x,
-      dz = graph.nodes[o + 2]! - z;
-    const d = Math.hypot(dx, dz);
-    if (d > far) {
-      far = d;
-      heading = Math.atan2(dx, dz);
+    longest = -1;
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    let run = 0;
+    for (let d = lattice.cell; d < 200; d += lattice.cell) {
+      const c = Math.floor((x + Math.sin(a) * d - lattice.minX) / lattice.cell);
+      const r = Math.floor((z + Math.cos(a) * d - lattice.minZ) / lattice.cell);
+      if (!nodes.at(c, r)) break;
+      run++;
+    }
+    if (run > longest) {
+      longest = run;
+      heading = a;
     }
   }
-  return [round2(x), round2(y + 0.1), round2(z), round2(heading)];
+  return [round2(x), round2(nodes.y[best]! + 0.1), round2(z), round2(heading)];
 }
 
 export function runPipeline(levelDir: string, cfg: CityConfig, idsPath: string): PipelineResult {
@@ -155,8 +160,8 @@ export function runPipeline(levelDir: string, cfg: CityConfig, idsPath: string):
     }),
   );
   const { props, trees } = collectProps(scene, classes);
-  const roads = buildRoadGraph(scene, classes);
 
+  const roads = buildRoadLattice(ground.grid, 5);
   const ids = new LotIds(cfg.cityId, idsPath);
   for (const l of lots) l.id = ids.assign((l.facade[0] + l.facade[2]) / 2, (l.facade[1] + l.facade[3]) / 2);
   ids.save();
@@ -249,8 +254,7 @@ export function runPipeline(levelDir: string, cfg: CityConfig, idsPath: string):
     muretas: lowSegs.length,
     props: props.length / 5,
     arvores: trees.length / 5,
-    nos_ruas: roads.nodes.length / 3,
-    arestas_ruas: roads.edges.length / 2,
+    celulas_pista: latticeNodes(roads).x.length,
     tempo_ms: Date.now() - t0,
   };
   return { layout, scene, grid: ground.grid, lots, walls, report };

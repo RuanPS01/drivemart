@@ -8,6 +8,7 @@ import { devSimulatePayment as simulate } from './dev';
 import { requireCaller } from './lib/auth';
 import { cancelOrder as cancel } from './orders/cancel';
 import { expireOrders } from './orders/expire';
+import * as customize from './parcels/customize';
 import { createPrimaryOrder as createPrimary } from './orders/primary';
 import { syncParcelState } from './triggers/parcelState';
 import { handleMercadoPagoWebhook } from './webhooks/mercadopago';
@@ -24,6 +25,28 @@ export const createPrimaryOrder = onCall(callable, (req) =>
 
 export const cancelOrder = onCall(callable, (req) =>
   cancel(requireCaller(req), (req.data as { orderId: string }).orderId),
+);
+
+export const updateParcelInfo = onCall({ enforceAppCheck }, (req) =>
+  customize.updateParcelInfo(
+    requireCaller(req),
+    req.data as Parameters<typeof customize.updateParcelInfo>[1],
+  ),
+);
+
+export const setParcelFacade = onCall({ enforceAppCheck, memory: '1GiB', timeoutSeconds: 120 }, (req) =>
+  customize.setParcelFacade(requireCaller(req), req.data as customize.FacadeInput),
+);
+
+export const updateFacadeOptions = onCall({ enforceAppCheck }, (req) =>
+  customize.updateFacadeOptions(
+    requireCaller(req),
+    req.data as Parameters<typeof customize.updateFacadeOptions>[1],
+  ),
+);
+
+export const removeParcelFacade = onCall({ enforceAppCheck }, (req) =>
+  customize.removeParcelFacade(requireCaller(req), (req.data as { parcelId: string }).parcelId),
 );
 
 export const devSimulatePayment = onCall({ enforceAppCheck }, (req) =>

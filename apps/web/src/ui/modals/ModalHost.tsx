@@ -3,6 +3,9 @@ import { useGame } from '../../state/gameStore';
 import { useUi } from '../../state/uiStore';
 import { AuthModal } from './AuthModal';
 import { CheckoutModal } from './CheckoutModal';
+import { ManageModal } from './ManageModal';
+import { SettingsModal } from './SettingsModal';
+import { MapModal } from '../map/MapModal';
 
 /** Renderiza o modal ativo e bloqueia o carro enquanto houver um aberto. */
 export function ModalHost() {
@@ -19,6 +22,12 @@ export function ModalHost() {
       return <AuthModal key="auth" />;
     case 'checkout':
       return modal.lotId ? <CheckoutModal key={`checkout-${modal.lotId}`} lotId={modal.lotId} /> : null;
+    case 'manage':
+      return <ManageModal key="manage" lotId={modal.lotId} />;
+    case 'map':
+      return <MapModal key="map" />;
+    case 'settings':
+      return <SettingsModal key="settings" />;
     default:
       return null;
   }

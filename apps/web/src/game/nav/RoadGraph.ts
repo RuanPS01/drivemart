@@ -1,9 +1,14 @@
+import { latticeNodes, type RoadLattice } from '@drivemart/shared';
+
 /** Grafo de ruas do traçado com busca do nó mais próximo e rota A*. */
 export class RoadGraph {
   readonly count: number;
   private adj: number[][];
   private grid = new Map<string, number[]>();
   private readonly cell = 32;
+  /** Componente conexo de cada nó e o id do maior (a rede principal de ruas). */
+  private comp: Int32Array;
+  private mainComp = 0;
 
   constructor(
     readonly nodes: number[],
@@ -17,12 +22,61 @@ export class RoadGraph {
       this.adj[a]!.push(b);
       this.adj[b]!.push(a);
     }
+    this.comp = new Int32Array(this.count).fill(-1);
+    let best = 0,
+      bestSize = 0;
+    for (let i = 0, c = 0; i < this.count; i++) {
+      if (this.comp[i]! >= 0) continue;
+      let size = 0;
+      const stack = [i];
+      this.comp[i] = c;
+      while (stack.length) {
+        const v = stack.pop()!;
+        size++;
+        for (const w of this.adj[v]!) {
+          if (this.comp[w]! < 0) {
+            this.comp[w] = c;
+            stack.push(w);
+          }
+        }
+      }
+      if (size > bestSize) {
+        bestSize = size;
+        best = c;
+      }
+      c++;
+    }
+    this.mainComp = best;
     for (let i = 0; i < this.count; i++) {
       const k = this.key(this.x(i), this.z(i));
       let l = this.grid.get(k);
       if (!l) this.grid.set(k, (l = []));
       l.push(i);
     }
+  }
+
+  /**
+   * Monta o grafo a partir da grade de pistas: cada célula é um nó ligado às vizinhas
+   * (diagonais só quando as duas ortogonais também são pista, para não cortar esquinas).
+   */
+  static fromLattice(l: RoadLattice): RoadGraph {
+    const n = latticeNodes(l);
+    const nodes: number[] = [];
+    const edges: number[] = [];
+    for (let i = 0; i < n.x.length; i++) {
+      nodes.push(n.x[i]!, n.y[i]!, n.z[i]!);
+      const c = n.col[i]!,
+        r = n.row[i]!;
+      const right = n.at(c + 1, r),
+        down = n.at(c, r + 1);
+      if (right) edges.push(i, right - 1);
+      if (down) edges.push(i, down - 1);
+      const dr = n.at(c + 1, r + 1);
+      if (dr && right && down) edges.push(i, dr - 1);
+      const dl = n.at(c - 1, r + 1);
+      if (dl && n.at(c - 1, r) && down) edges.push(i, dl - 1);
+    }
+    return new RoadGraph(nodes, edges);
   }
 
   x(i: number): number {
@@ -42,8 +96,8 @@ export class RoadGraph {
     return `${Math.floor(x / this.cell)},${Math.floor(z / this.cell)}`;
   }
 
-  /** Nó mais próximo (busca em anéis crescentes da grade). */
-  nearest(x: number, z: number, maxRadius = 600): number {
+  /** Nó mais próximo (busca em anéis crescentes da grade). Com `mainOnly`, só na rede principal. */
+  nearest(x: number, z: number, maxRadius = 600, mainOnly = false): number {
     const ci = Math.floor(x / this.cell),
       cj = Math.floor(z / this.cell);
     let best = -1,
@@ -53,6 +107,7 @@ export class RoadGraph {
         for (let j = cj - r; j <= cj + r; j++) {
           if (Math.max(Math.abs(i - ci), Math.abs(j - cj)) !== r) continue;
           for (const n of this.grid.get(`${i},${j}`) ?? []) {
+            if (mainOnly && this.comp[n] !== this.mainComp) continue;
             const d = Math.hypot(this.x(n) - x, this.z(n) - z);
             if (d < bestD) {
               bestD = d;
