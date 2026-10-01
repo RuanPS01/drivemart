@@ -4,6 +4,8 @@ import { useUi } from '../../state/uiStore';
 import { AuthModal } from './AuthModal';
 import { CheckoutModal } from './CheckoutModal';
 import { ManageModal } from './ManageModal';
+import { ReportModal } from './ReportModal';
+import { ResaleModal } from './ResaleModal';
 import { SettingsModal } from './SettingsModal';
 import { MapModal } from '../map/MapModal';
 
@@ -28,6 +30,12 @@ export function ModalHost() {
       return <MapModal key="map" />;
     case 'settings':
       return <SettingsModal key="settings" />;
+    case 'resale':
+      return modal.lotId ? (
+        <ResaleModal key={`resale-${modal.lotId}`} lotId={modal.lotId} orderId={modal.orderId} />
+      ) : null;
+    case 'report':
+      return modal.lotId ? <ReportModal key={`report-${modal.lotId}`} lotId={modal.lotId} /> : null;
     default:
       return null;
   }

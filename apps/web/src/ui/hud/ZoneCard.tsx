@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { formatBRL, type CityStateEntry, type LayoutLot } from '@drivemart/shared';
 import { useAuth } from '../../state/authStore';
 import { useGame } from '../../state/gameStore';
+import { useOrders } from '../../state/orderStore';
 import { useParcels } from '../../state/parcelStore';
 import { useUi, type ModalState } from '../../state/uiStore';
 import { linkDomain, openShopLink } from '../links';
@@ -28,6 +29,7 @@ export function ZoneCard() {
   const engine = useGame((s) => s.engine);
   const uid = useAuth((s) => s.user?.uid ?? null);
   const modalOpen = useUi((s) => s.modal !== null);
+  const myOrder = useOrders((s) => (zone ? s.buying.find((o) => o.parcelId === zone.lotId) : undefined));
   const lot = zone && engine ? engine.parcels.byId.get(zone.lotId) : undefined;
 
   const mine = !!entry && !!uid && entry.ou === uid;
@@ -67,7 +69,9 @@ export function ZoneCard() {
       {entry?.o && !mine && <p className="zone-owner">Dono: {entry.o}</p>}
       {!entry && <p className="zone-price">{formatBRL(lot.pr)}</p>}
       {entry?.s === 'for_sale' && entry.p && <p className="zone-price">{formatBRL(entry.p)}</p>}
-      {entry?.s === 'reserved' && <p className="muted">Uma compra deste imóvel está em andamento.</p>}
+      {entry?.s === 'reserved' && !myOrder && (
+        <p className="muted">Uma compra deste imóvel está em andamento.</p>
+      )}
       <div className="zone-actions">
         {entry?.l && !mine && (
           <button className="btn primary" onClick={() => openShopLink(entry.l!)}>
@@ -90,7 +94,23 @@ export function ZoneCard() {
             Gerenciar (E)
           </button>
         )}
-        {entry && !mine && entry.f && (
+        {myOrder && !mine && (
+          <button
+            className="btn primary"
+            onClick={() =>
+              useUi
+                .getState()
+                .open(
+                  myOrder.kind === 'resale'
+                    ? { name: 'resale', lotId: lot.id, orderId: myOrder.id }
+                    : { name: 'checkout', lotId: lot.id },
+                )
+            }
+          >
+            Continuar minha compra
+          </button>
+        )}
+        {entry && !mine && (entry.f || entry.l) && (
           <button className="btn" onClick={() => requireAuthThen({ name: 'report', lotId: lot.id })}>
             Denunciar
           </button>

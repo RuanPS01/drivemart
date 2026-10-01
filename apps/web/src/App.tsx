@@ -13,12 +13,14 @@ import { ZoneCard } from './ui/hud/ZoneCard';
 import { ModalHost } from './ui/modals/ModalHost';
 import { Minimap } from './ui/map/Minimap';
 import { RouteBanner } from './ui/hud/RouteBanner';
+import { useOrderWatch } from './ui/useOrderWatch';
 
 export function App() {
   const ready = useGame((s) => s.phase === 'ready');
   const engine = useGame((s) => s.engine);
 
   useEffect(() => initAuth(), []);
+  useOrderWatch();
 
   // Atalhos globais do teclado e do gamepad.
   useEffect(() => {

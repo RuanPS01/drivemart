@@ -18,6 +18,7 @@ import { useUi } from '../../state/uiStore';
 import { SHOP_HEIGHT } from '../../game/world/cityGen';
 import { lotSubtitle, lotTitle } from '../hud/ZoneCard';
 import { Modal } from './Modal';
+import { PendingOrders } from './PendingOrders';
 import { SaleTab } from './SaleTab';
 
 type Tab = 'facade' | 'info' | 'place' | 'sale';
@@ -44,6 +45,7 @@ export function ManageModal({ lotId }: { lotId?: string }) {
 
   return (
     <Modal title="Meus imóveis" wide>
+      <PendingOrders />
       {!list ? (
         <p className="muted">Carregando...</p>
       ) : !list.length ? (

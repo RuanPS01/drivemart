@@ -3,13 +3,16 @@ import { onDocumentWritten } from 'firebase-functions/firestore';
 import { onCall, onRequest } from 'firebase-functions/https';
 import { onSchedule } from 'firebase-functions/scheduler';
 import type { ParcelDoc } from '@drivemart/shared';
+import * as admin from './admin';
 import { MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET } from './config';
 import { devSimulatePayment as simulate } from './dev';
-import { requireCaller } from './lib/auth';
+import { requireAdmin, requireCaller } from './lib/auth';
 import { cancelOrder as cancel } from './orders/cancel';
 import { expireOrders } from './orders/expire';
 import * as customize from './parcels/customize';
+import * as sale from './parcels/sale';
 import { createPrimaryOrder as createPrimary } from './orders/primary';
+import * as resale from './orders/resale';
 import { syncParcelState } from './triggers/parcelState';
 import { handleMercadoPagoWebhook } from './webhooks/mercadopago';
 
@@ -47,6 +50,44 @@ export const updateFacadeOptions = onCall({ enforceAppCheck }, (req) =>
 
 export const removeParcelFacade = onCall({ enforceAppCheck }, (req) =>
   customize.removeParcelFacade(requireCaller(req), (req.data as { parcelId: string }).parcelId),
+);
+
+export const listParcelForSale = onCall({ enforceAppCheck }, (req) =>
+  sale.listParcelForSale(requireCaller(req), req.data as sale.ListInput),
+);
+
+export const unlistParcel = onCall({ enforceAppCheck }, (req) =>
+  sale.unlistParcel(requireCaller(req), (req.data as { parcelId: string }).parcelId),
+);
+
+export const startResaleOrder = onCall(callable, (req) =>
+  resale.startResaleOrder(requireCaller(req), (req.data as { parcelId: string }).parcelId),
+);
+
+export const markResalePaid = onCall({ enforceAppCheck }, (req) => {
+  const d = req.data as { orderId: string; receiptPath?: string };
+  return resale.markResalePaid(requireCaller(req), d.orderId, d.receiptPath);
+});
+
+export const confirmResaleReceipt = onCall({ enforceAppCheck }, (req) =>
+  resale.confirmResaleReceipt(requireCaller(req), (req.data as { orderId: string }).orderId),
+);
+
+export const rejectResaleReceipt = onCall({ enforceAppCheck }, (req) => {
+  const d = req.data as { orderId: string; reason?: string };
+  return resale.rejectResaleReceipt(requireCaller(req), d.orderId, d.reason ?? '');
+});
+
+export const adminResolveDispute = onCall(callable, (req) =>
+  admin.resolveDispute(requireAdmin(req), req.data as admin.DisputeInput),
+);
+
+export const adminModerateParcel = onCall({ enforceAppCheck }, (req) =>
+  admin.moderateParcel(requireAdmin(req), req.data as Parameters<typeof admin.moderateParcel>[1]),
+);
+
+export const adminResolveReport = onCall({ enforceAppCheck }, (req) =>
+  admin.resolveReport(requireAdmin(req), req.data as Parameters<typeof admin.resolveReport>[1]),
 );
 
 export const devSimulatePayment = onCall({ enforceAppCheck }, (req) =>

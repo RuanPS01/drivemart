@@ -79,3 +79,13 @@ export async function waitFor<T>(
     await new Promise((r) => setTimeout(r, 250));
   }
 }
+
+/** Dá a custom claim `admin` ao usuário no emulador e devolve um token novo com ela. */
+export async function makeAdmin(user: TestUser): Promise<TestUser> {
+  await fetch(`http://${authHost()}/identitytoolkit.googleapis.com/v1/accounts:update?key=demo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+    body: JSON.stringify({ localId: user.uid, customAttributes: JSON.stringify({ admin: true }) }),
+  });
+  return { ...user, idToken: await signIn(user.email) };
+}

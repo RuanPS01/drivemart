@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { signOut } from '../../services/auth';
 import { firebase } from '../../services/firebase';
 import { useAuth } from '../../state/authStore';
+import { sellerActionCount, useOrders } from '../../state/orderStore';
 import { useUi } from '../../state/uiStore';
+import { CaretIcon, GearIcon } from '../icons/Icons';
 
 /** Barra superior: logo, botão de login sempre disponível e menu do usuário. */
 export function TopBar() {
@@ -11,6 +13,7 @@ export function TopBar() {
   const open = useUi((s) => s.open);
   const toast = useUi((s) => s.toast);
   const [menu, setMenu] = useState(false);
+  const pending = useOrders((s) => sellerActionCount(s.selling));
   const online = !!firebase();
 
   return (
@@ -30,11 +33,14 @@ export function TopBar() {
         {user && (
           <div className="user-menu">
             <button className="hud-button" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
-              {user.displayName || user.email || 'Minha conta'} ▾
+              {user.displayName || user.email || 'Minha conta'}
+              {pending > 0 && <span className="count-badge">{pending}</span>} <CaretIcon />
             </button>
             {menu && (
               <div className="user-menu-list panel" onMouseLeave={() => setMenu(false)}>
-                <button onClick={() => (setMenu(false), open({ name: 'manage' }))}>Meus imóveis</button>
+                <button onClick={() => (setMenu(false), open({ name: 'manage' }))}>
+                  Meus imóveis{pending > 0 ? ` (${pending} pendente${pending > 1 ? 's' : ''})` : ''}
+                </button>
                 <button onClick={() => (setMenu(false), open({ name: 'settings' }))}>Configurações</button>
                 {user.admin && (
                   <a href="/admin" target="_blank" rel="noopener">
@@ -59,7 +65,7 @@ export function TopBar() {
           title="Configurações"
           aria-label="Configurações"
         >
-          ⚙
+          <GearIcon />
         </button>
       </div>
     </div>

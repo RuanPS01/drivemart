@@ -33,16 +33,14 @@ export function ControlsHelp() {
       <h3>Controles</h3>
       <ul>
         <li>
-          <kbd>W</kbd>
-          <kbd>↑</kbd> acelerar
+          <kbd>W</kbd> ou seta para cima: acelerar
         </li>
         <li>
-          <kbd>S</kbd>
-          <kbd>↓</kbd> frear e ré
+          <kbd>S</kbd> ou seta para baixo: frear e ré
         </li>
         <li>
           <kbd>A</kbd>
-          <kbd>D</kbd> virar
+          <kbd>D</kbd> ou setas laterais: virar
         </li>
         <li>
           <kbd>Espaço</kbd> freio de mão

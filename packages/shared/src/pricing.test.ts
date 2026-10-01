@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PRICING, formatBRL, lotPrice } from './pricing';
+import { centsToInput, DEFAULT_PRICING, formatBRL, lotPrice, parseBRL } from './pricing';
 
 describe('lotPrice', () => {
   it('aplica área, andares e orla e arredonda para dezenas de reais', () => {
@@ -18,5 +18,28 @@ describe('lotPrice', () => {
 describe('formatBRL', () => {
   it('formata em reais', () => {
     expect(formatBRL(123456).replace(/\s/g, ' ')).toBe('R$ 1.234,56');
+  });
+});
+
+describe('parseBRL', () => {
+  it('entende os formatos digitados mais comuns', () => {
+    expect(parseBRL('1.234,56')).toBe(123456);
+    expect(parseBRL('R$ 50')).toBe(5000);
+    expect(parseBRL('1234.5')).toBe(123450);
+    expect(parseBRL('1.500')).toBe(150000);
+    expect(parseBRL('10,9')).toBe(1090);
+    expect(parseBRL('2.000.000')).toBe(200000000);
+  });
+
+  it('rejeita textos que não são valores', () => {
+    expect(parseBRL('')).toBeNull();
+    expect(parseBRL('abc')).toBeNull();
+    expect(parseBRL('1,234,5')).toBeNull();
+    expect(parseBRL('-5')).toBeNull();
+  });
+
+  it('volta para o formato de edição', () => {
+    expect(centsToInput(123456)).toBe('1234,56');
+    expect(parseBRL(centsToInput(99))).toBe(99);
   });
 });

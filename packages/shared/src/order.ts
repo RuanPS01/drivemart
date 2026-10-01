@@ -80,6 +80,8 @@ export interface OrderDoc {
   payment: OrderPayment;
   resale: OrderResale | null;
   refund: { status: 'pending' | 'done' | 'failed'; reason: string; at: number } | null;
+  /** Decisão do admin numa disputa. */
+  resolution?: { by: string; outcome: 'complete' | 'cancel'; note: string | null; at: number };
 }
 
 /** Transições permitidas da máquina de estados dos pedidos. */

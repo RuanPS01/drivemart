@@ -48,3 +48,31 @@ export function lotPrice(lot: LotPricingInput, cfg: PricingConfig = DEFAULT_PRIC
 export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
+/**
+ * Lê um valor digitado em reais ("1.234,56", "1234.56", "R$ 50") e devolve centavos.
+ * Retorna nulo quando não for um número válido.
+ */
+export function parseBRL(input: string): number | null {
+  let s = input.replace(/[R$\s]/gi, '');
+  if (!s || !/^[\d.,]+$/.test(s)) return null;
+  const comma = s.lastIndexOf(',');
+  const dot = s.lastIndexOf('.');
+  if (comma >= 0) {
+    // Formato brasileiro: ponto separa milhar e vírgula separa centavos.
+    if (s.indexOf(',') !== comma || dot > comma) return null;
+    s = s.slice(0, comma).replace(/\./g, '') + '.' + s.slice(comma + 1);
+  } else if (dot >= 0 && s.length - dot - 1 !== 3) {
+    // Um único ponto seguido de 1 ou 2 casas: separador decimal.
+    s = s.slice(0, dot).replace(/\./g, '') + '.' + s.slice(dot + 1);
+  } else {
+    s = s.replace(/\./g, '');
+  }
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  return Math.round(Number(s) * 100);
+}
+
+/** Centavos no formato para editar num campo ("1234,56"). */
+export function centsToInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace('.', ',');
+}

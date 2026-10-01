@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../../state/gameStore';
+import { TriangleIcon } from '../icons/Icons';
 
 /** Controles na tela para celular e tablet (aparecem só em telas de toque). */
 export function TouchControls() {
@@ -36,7 +37,7 @@ export function TouchControls() {
             () => input.setTouch({ steer: 0 }),
           )}
         >
-          ◀
+          <TriangleIcon dir="left" />
         </button>
         <button
           aria-label="Virar à direita"
@@ -45,7 +46,7 @@ export function TouchControls() {
             () => input.setTouch({ steer: 0 }),
           )}
         >
-          ▶
+          <TriangleIcon dir="right" />
         </button>
       </div>
       <div className="touch-right">

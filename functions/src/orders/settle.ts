@@ -1,6 +1,7 @@
 import { FieldValue, type Transaction, type DocumentReference } from 'firebase-admin/firestore';
-import type { OrderDoc, ParcelDoc } from '@drivemart/shared';
+import { buildBrCode, type OrderDoc, type ParcelDoc } from '@drivemart/shared';
 import { platformConfig } from '../config';
+import type { SalePrivate } from '../parcels/sale';
 import { db } from '../lib/firebase';
 import { providerByName } from '../payments';
 import type { ChargeStatus } from '../payments/provider';
@@ -90,13 +91,20 @@ export async function applyChargeStatus(orderId: string, st: ChargeStatus): Prom
           tx.update(orderRef, { ...paidFields, status: 'completed' });
           return 'completed';
         }
-        // Revenda: taxa paga; comprador agora paga o vendedor.
+        // Revenda: taxa paga; comprador agora paga o vendedor pelo BR Code com a chave dele.
+        const priv = (await tx.get(parcelRef.collection('private').doc('sale'))).data() as
+          SalePrivate | undefined;
         const deadline = now + platform.buyerConfirmHours * 3_600_000;
         tx.update(parcelRef, {
           'reservation.until': deadline + platform.sellerConfirmHours * 3_600_000,
           updatedAt: now,
         });
-        tx.update(orderRef, { ...paidFields, status: 'fee_paid', 'resale.stageDeadline': deadline });
+        tx.update(orderRef, {
+          ...paidFields,
+          status: 'fee_paid',
+          'resale.stageDeadline': deadline,
+          'resale.brCode': priv ? sellerBrCodeFor(priv, o.sellerAmount, orderId) : '',
+        });
         return 'fee_paid';
       }
       // Pagamento chegou tarde (lote já foi para outra pessoa ou pedido cancelado): devolve.
@@ -136,6 +144,17 @@ export async function applyChargeStatus(orderId: string, st: ChargeStatus): Prom
 
   if (pending.refund) await runRefund(orderId, pending.refund.provider, pending.refund.providerOrderId);
   return result;
+}
+
+function sellerBrCodeFor(priv: SalePrivate, amount: number, orderId: string): string {
+  return buildBrCode({
+    key: priv.pixKey,
+    name: priv.receiverName,
+    city: priv.receiverCity,
+    amountCents: amount,
+    txid: `DM${orderId}`.replace(/[^A-Za-z0-9]/g, '').slice(0, 25),
+    description: 'DriveMart revenda',
+  });
 }
 
 /** Pede o estorno ao provedor e registra o resultado no pedido. */
