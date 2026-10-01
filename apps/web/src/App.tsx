@@ -3,6 +3,7 @@ import { ControlsHelp } from './ui/hud/ControlsHelp';
 import { LoadingScreen } from './ui/hud/LoadingScreen';
 import { Speedometer } from './ui/hud/Speedometer';
 import { TouchControls } from './ui/hud/TouchControls';
+import { ZoneCard } from './ui/hud/ZoneCard';
 import { useGame } from './state/gameStore';
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
           <Speedometer />
           <ControlsHelp />
           <TouchControls />
+          <ZoneCard />
         </div>
       )}
       <LoadingScreen />

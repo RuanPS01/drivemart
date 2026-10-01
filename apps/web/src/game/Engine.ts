@@ -4,6 +4,13 @@ import { loadOverrides, paintLayers } from './art/TextureLibrary';
 import { CameraRig } from './camera/CameraRig';
 import { Input, type InputAction } from './input/Input';
 import { RoadGraph } from './nav/RoadGraph';
+import { FacadeManager } from './parcels/FacadeManager';
+import { ParcelIndex } from './parcels/ParcelIndex';
+import { ZoneDetector } from './parcels/ZoneDetector';
+import { ZoneMarkers } from './parcels/ZoneMarkers';
+import { CityStateSync } from '../services/cityState';
+import { useAuth } from '../state/authStore';
+import { useParcels } from '../state/parcelStore';
 import { Physics } from './physics/Physics';
 import { Car } from './vehicle/Car';
 import { ChunkStreamer } from './world/ChunkStreamer';
@@ -33,6 +40,12 @@ export class Engine {
   readonly camera: THREE.PerspectiveCamera;
   readonly input: Input;
   readonly roads: RoadGraph;
+  readonly parcels: ParcelIndex;
+  private zones: ZoneDetector;
+  private markers!: ZoneMarkers;
+  private facades!: FacadeManager;
+  private cityState: CityStateSync;
+  private unsubs: (() => void)[] = [];
   private rig: CameraRig;
   private car!: Car;
   private streamer!: ChunkStreamer;
@@ -66,6 +79,9 @@ export class Engine {
     this.input = new Input();
     this.rig = new CameraRig(this.camera);
     this.roads = new RoadGraph(layout.roads.nodes, layout.roads.edges);
+    this.parcels = new ParcelIndex(layout.lots);
+    this.zones = new ZoneDetector(this.parcels);
+    this.cityState = new CityStateSync(layout.cityId);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
   }
@@ -107,6 +123,15 @@ export class Engine {
     this.scene.add(this.streamer.root);
     this.car = new Car(this.physics, world, [1.6, 0.22, 0.18], this.layout.spawn);
     this.scene.add(this.car.object);
+    this.markers = new ZoneMarkers(this.parcels);
+    this.facades = new FacadeManager(this.parcels, this.uniforms);
+    this.scene.add(this.markers.group, this.facades.group);
+    this.facades.sync(useParcels.getState().entries);
+    this.unsubs.push(
+      useParcels.subscribe((st, prev) => {
+        if (st.version !== prev.version) this.facades.sync(st.entries);
+      }),
+    );
     this.input.onAction((a) => this.onAction(a));
     this.setGraphics('ps1');
     this.resize();
@@ -159,6 +184,25 @@ export class Engine {
 
   get carSpeed(): number {
     return this.car.speed;
+  }
+
+  /** Destaca uma zona como destino (GPS). */
+  setTargetZone(lotId: string | null): void {
+    this.markers.target = lotId;
+  }
+
+  /** Teleporta para a zona de ação de um lote, alinhado à rua. */
+  teleportToLot(lotId: string): boolean {
+    const lot = this.parcels.byId.get(lotId);
+    if (!lot?.z) return false;
+    const [x, z, y, angle] = lot.z;
+    // Carro paralelo à fachada; escolhe o sentido mais próximo do rumo da rua.
+    const h1 = Math.atan2(Math.cos(angle), Math.sin(angle));
+    const n = this.roads.nearest(x, z);
+    const roadH = n >= 0 ? this.roads.headingAt(n, h1) : h1;
+    const diff = Math.abs(Math.atan2(Math.sin(roadH - h1), Math.cos(roadH - h1)));
+    this.teleport(x, y, z, diff > Math.PI / 2 ? h1 + Math.PI : h1);
+    return true;
   }
 
   setInputEnabled(enabled: boolean): void {
@@ -227,6 +271,12 @@ export class Engine {
     const pos = this.car.object.position;
     this.streamer.update(pos);
     this.rig.update(pos, this.car.object.quaternion, this.car.heading, this.car.speed, input.lookBack, dt);
+    const contact = this.zones.update(pos.x, pos.z, this.car.speed, dt);
+    const parcelState = useParcels.getState();
+    parcelState.setZone(contact);
+    this.markers.update(pos.x, pos.z, dt, parcelState.entries, useAuth.getState().user?.uid ?? null);
+    this.facades.update(pos.x, pos.z, dt);
+    this.cityState.update(pos.x, pos.z);
     this.sky.position.copy(this.camera.position);
     this.backdrop.position.set(this.camera.position.x, 0, this.camera.position.z);
     this.uniforms.time.value += dt;
@@ -249,6 +299,8 @@ export class Engine {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     this.resizeObserver.disconnect();
+    for (const u of this.unsubs) u();
+    this.cityState.dispose();
     this.input.dispose();
     this.streamer.dispose();
     this.car.dispose();

@@ -3,6 +3,10 @@ import type { ChunkColliders } from '../world/cityGen';
 
 export type Rapier = typeof RAPIER;
 
+// Inicializar o WASM duas vezes troca a memória do módulo e invalida mundos já criados
+// (acontece com o modo estrito do React montando o jogo duas vezes). Inicializa uma única vez.
+let rapierReady: Promise<void> | null = null;
+
 /** Mundo físico (Rapier) com os colisores estáticos da cidade agrupados por chunk. */
 export class Physics {
   readonly world: RAPIER.World;
@@ -14,7 +18,8 @@ export class Physics {
   }
 
   static async create(): Promise<Physics> {
-    await RAPIER.init();
+    rapierReady ??= RAPIER.init();
+    await rapierReady;
     return new Physics(RAPIER);
   }
 

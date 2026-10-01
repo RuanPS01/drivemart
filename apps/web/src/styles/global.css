@@ -320,3 +320,105 @@ kbd {
   font-size: 10px;
   line-height: 1.1;
 }
+
+.muted {
+  color: var(--muted);
+}
+
+.zone-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  pointer-events: none !important;
+}
+
+.zone-card {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  padding: 16px;
+  animation: rise 0.18s ease-out;
+}
+
+@keyframes rise {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+}
+
+.zone-card h2 {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 24px;
+  margin: 6px 0 2px;
+}
+
+.zone-card p {
+  margin: 4px 0;
+}
+
+.zone-price {
+  font-family: var(--font-title);
+  font-size: 30px;
+  color: var(--accent);
+}
+
+.zone-owner {
+  font-weight: 700;
+}
+
+.zone-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.zone-actions .btn small {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  opacity: 0.8;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #10131a;
+}
+
+.badge-available {
+  background: #3ddc84;
+}
+.badge-sale {
+  background: #ffcc33;
+}
+.badge-shop {
+  background: #4fb3ff;
+}
+.badge-owned {
+  background: #b0b8c8;
+}
+.badge-mine {
+  background: #ff8c1a;
+}
+.badge-reserved {
+  background: #8a8f99;
+}

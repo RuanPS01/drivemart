@@ -15,3 +15,4 @@ playwright-report/
 test-results/
 tools/city-pipeline/out/
 .DS_Store
+apps/web/public/__samples__/
