@@ -1,0 +1,54 @@
+name: GitHub Pages
+
+# Publica a versão de teste do jogo (sem Firebase: só direção, sem login nem compras).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Build da versão de teste
+        run: npm run build -w @drivemart/web
+        env:
+          VITE_OFFLINE: 'true'
+          # "/drivemart/" no endereço padrão do Pages; "/" com domínio próprio.
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+      - name: Prepara o site estático
+        working-directory: apps/web/dist
+        run: |
+          # O Pages não tem reescrita de rotas: o 404.html carrega o app em /termos, /privacidade etc.
+          cp index.html 404.html
+          test -s cities/rio/layout.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

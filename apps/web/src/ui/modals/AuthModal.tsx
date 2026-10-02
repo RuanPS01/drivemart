@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { authErrorMessage, resetPassword, signInEmail, signInGoogle, signUpEmail } from '../../services/auth';
 import { useUi } from '../../state/uiStore';
 import { Modal } from './Modal';
+import { appUrl } from '../links';
 
 type Tab = 'login' | 'signup' | 'reset';
 
@@ -126,11 +127,11 @@ export function AuthModal() {
         {tab === 'signup' && (
           <p className="muted small">
             Ao criar a conta você aceita os{' '}
-            <a href="/termos" target="_blank" rel="noopener">
+            <a href={appUrl('termos')} target="_blank" rel="noopener">
               Termos de Uso
             </a>{' '}
             e a{' '}
-            <a href="/privacidade" target="_blank" rel="noopener">
+            <a href={appUrl('privacidade')} target="_blank" rel="noopener">
               Política de Privacidade
             </a>
             .

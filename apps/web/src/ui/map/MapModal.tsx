@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatBRL, type LayoutLot } from '@drivemart/shared';
-import { firebase } from '../../services/firebase';
+import { firebase, isOffline } from '../../services/firebase';
 import { watchCityIndex, type CityIndexDoc } from '../../services/parcels';
 import { useAuth } from '../../state/authStore';
 import { useGame } from '../../state/gameStore';
@@ -118,6 +118,7 @@ export function MapModal() {
   const entry = selected ? entries[selected.id] : undefined;
   const mine = !!selected && !!uid && (entry?.ou === uid || index.owned?.[selected.id] === uid);
   const salePrice = selected ? index.forSale?.[selected.id] : undefined;
+  const offline = isOffline();
 
   return (
     <Modal title="Mapa" wide>
@@ -149,14 +150,18 @@ export function MapModal() {
         />
         <div className="map-legend">
           <span className="lg lg-car">Você</span>
-          <span className="lg lg-mine">Seus imóveis</span>
-          <span className="lg lg-sale">À venda (revenda)</span>
+          {!offline && <span className="lg lg-mine">Seus imóveis</span>}
+          {!offline && <span className="lg lg-sale">À venda (revenda)</span>}
         </div>
         {selected && (
           <div className="map-info panel">
             <strong>{lotTitle(selected, entry)}</strong>
             <span className="muted">{lotSubtitle(selected)}</span>
-            {!entry && !index.owned?.[selected.id] && <span>Plataforma: {formatBRL(selected.pr)}</span>}
+            {offline ? (
+              <span>Preço de referência: {formatBRL(selected.pr)}</span>
+            ) : (
+              !entry && !index.owned?.[selected.id] && <span>Plataforma: {formatBRL(selected.pr)}</span>
+            )}
             {salePrice && <span>Revenda: {formatBRL(salePrice)}</span>}
             <div className="row">
               <button
@@ -170,7 +175,8 @@ export function MapModal() {
               >
                 Traçar rota
               </button>
-              {mine && (
+              {/* No modo de teste dá para teleportar para qualquer imóvel. */}
+              {(mine || offline) && (
                 <button
                   className="btn"
                   onClick={() => {

@@ -11,6 +11,7 @@ import { ParcelIndex } from './parcels/ParcelIndex';
 import { ZoneDetector } from './parcels/ZoneDetector';
 import { ZoneMarkers } from './parcels/ZoneMarkers';
 import { CityStateSync } from '../services/cityState';
+import { appUrl } from '../ui/links';
 import { useAuth } from '../state/authStore';
 import { useParcels } from '../state/parcelStore';
 import { Physics } from './physics/Physics';
@@ -112,7 +113,7 @@ export class Engine {
     report(0.05, 'Carregando a física...');
     const physicsP = Physics.create();
     report(0.15, 'Baixando o mapa da cidade...');
-    const layoutUrl = `/cities/${cityId}/layout.json`;
+    const layoutUrl = appUrl(`cities/${cityId}/layout.json`);
     const layout = (await (await fetch(layoutUrl)).json()) as CityLayout;
     const physics = await physicsP;
     const engine = new Engine(canvas, layout, physics, events);

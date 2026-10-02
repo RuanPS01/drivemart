@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isOffline } from '../../services/firebase';
 
 const KEY = 'drivemart:help-dismissed';
 
@@ -58,7 +59,11 @@ export function ControlsHelp() {
           <kbd>M</kbd> mapa
         </li>
       </ul>
-      <p>Pare o carro na vaga marcada em frente a um prédio para ver o preço e comprar.</p>
+      <p>
+        {isOffline()
+          ? 'Pare o carro na vaga marcada em frente a um prédio para ver o imóvel. Nesta versão de teste o login e as compras estão desativados.'
+          : 'Pare o carro na vaga marcada em frente a um prédio para ver o preço e comprar.'}
+      </p>
       <button className="btn primary" onClick={close}>
         Dirigir
       </button>

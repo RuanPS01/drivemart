@@ -449,6 +449,29 @@ kbd {
   align-items: center;
 }
 
+/* Selo da versão de teste (sem Firebase). */
+.test-badge {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  background: rgba(10, 12, 18, 0.75);
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  padding: 7px 12px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.zone-price small {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+}
+
 .hud-button.accent {
   background: var(--accent);
   color: var(--accent-ink);

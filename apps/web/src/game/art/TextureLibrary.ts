@@ -2,6 +2,7 @@ import * as G from './painters/ground';
 import * as B from './painters/buildings';
 import * as O from './painters/objects';
 import type { Px } from './pixels';
+import { appUrl } from '../../ui/links';
 
 export const LAYER_SIZE = 128;
 
@@ -98,11 +99,11 @@ export function paintLayers(seed = 1999): Uint8Array {
   return out;
 }
 
-/** Substitui camadas por PNGs feitos à mão em `/art/<camada>.png`, se existirem (lista em `/art/overrides.json`). */
+/** Substitui camadas por PNGs feitos à mão em `art/<camada>.png`, se existirem (lista em `/art/overrides.json`). */
 export async function loadOverrides(data: Uint8Array): Promise<number> {
   let names: string[];
   try {
-    const res = await fetch('/art/overrides.json');
+    const res = await fetch(appUrl('art/overrides.json'));
     if (!res.ok) return 0;
     names = (await res.json()) as string[];
   } catch {
@@ -113,7 +114,7 @@ export async function loadOverrides(data: Uint8Array): Promise<number> {
   for (const name of names) {
     const idx = LAYER_NAMES.indexOf(name as LayerName);
     if (idx < 0) continue;
-    const img = await createImageBitmap(await (await fetch(`/art/${name}.png`)).blob());
+    const img = await createImageBitmap(await (await fetch(appUrl(`art/${name}.png`))).blob());
     const canvas = new OffscreenCanvas(LAYER_SIZE, LAYER_SIZE);
     const ctx = canvas.getContext('2d')!;
     ctx.drawImage(img, 0, 0, LAYER_SIZE, LAYER_SIZE);
