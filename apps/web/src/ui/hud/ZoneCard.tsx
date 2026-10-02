@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { formatBRL, type CityStateEntry, type LayoutLot } from '@drivemart/shared';
+import { isOffline } from '../../services/firebase';
 import { useAuth } from '../../state/authStore';
 import { useGame } from '../../state/gameStore';
 import { useOrders } from '../../state/orderStore';
@@ -18,6 +19,10 @@ export function lotSubtitle(lot: LayoutLot): string {
 /** Abre um modal exigindo login antes (o modal desejado abre em seguida). */
 export function requireAuthThen(m: ModalState): void {
   const ui = useUi.getState();
+  if (isOffline()) {
+    ui.toast('Login e compras estão desativados nesta versão de teste.');
+    return;
+  }
   if (useAuth.getState().user) ui.open(m);
   else ui.open({ name: 'auth', then: m });
 }
@@ -45,7 +50,7 @@ export function ZoneCard() {
   useEffect(() => {
     if (!engine) return;
     return engine.input.onAction((a) => {
-      if (a !== 'interact' || modalOpen) return;
+      if (a !== 'interact' || modalOpen || isOffline()) return;
       const z = useParcels.getState().zone;
       if (!z?.stopped) return;
       const e = useParcels.getState().entries[z.lotId];
@@ -58,6 +63,7 @@ export function ZoneCard() {
   if (!zone.stopped) {
     return <div className="zone-hint">Pare na vaga para ver o imóvel</div>;
   }
+  if (isOffline()) return <OfflineZoneCard lot={lot} />;
 
   return (
     <div className="zone-card panel" role="dialog" aria-label="Imóvel">
@@ -116,6 +122,23 @@ export function ZoneCard() {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Modo de teste: mostra o imóvel sem nenhuma ação de compra. */
+function OfflineZoneCard({ lot }: { lot: LayoutLot }) {
+  return (
+    <div className="zone-card panel" role="dialog" aria-label="Imóvel">
+      <div className="zone-card-head">
+        <span className="badge badge-owned">Modo de teste</span>
+        <h2>{lotTitle(lot)}</h2>
+        <p className="muted">{lotSubtitle(lot)}</p>
+      </div>
+      <p className="zone-price">
+        {formatBRL(lot.pr)} <small className="muted">preço de referência</small>
+      </p>
+      <p className="muted small">Compras e login estão desativados nesta versão de teste.</p>
     </div>
   );
 }

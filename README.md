@@ -52,7 +52,7 @@ npm run emulators:seed   # em outro terminal, uma única vez: grava o catálogo 
 - Os dados dos emuladores são salvos em `.emulator-data` ao sair (Ctrl+C) e recarregados na próxima vez.
 - Interface dos emuladores: http://localhost:4000 (contas, documentos e arquivos). O link de confirmação de e-mail aparece no terminal dos emuladores.
 - Para virar admin no emulador: `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm run admin:grant -- seu@email.com` e depois "Atualizar acesso" em `/admin`.
-- Só o jogo, sem Firebase: `npm run dev` com `VITE_USE_EMULATORS=false` em `apps/web/.env.local` (dá para dirigir, mas não comprar).
+- Só o jogo, sem Firebase (modo de teste): `npm run dev` com `VITE_OFFLINE=true` em `apps/web/.env.local`. Dá para dirigir, usar o mapa e teleportar para qualquer imóvel; login e compras ficam desativados.
 
 ### Testes
 
@@ -62,6 +62,18 @@ npm test                 # unitários (Vitest)
 npm run test:emulator    # regras do Firestore e Cloud Functions contra os emuladores
 npm run test:e2e         # Playwright; o fluxo de compra roda quando os emuladores estão no ar
 ```
+
+## Versão de teste no GitHub Pages
+
+A pipeline `.github/workflows/pages.yml` publica o jogo no modo de teste (sem Firebase: só direção, sem login nem compras) a cada push na `main`, e também pode ser rodada à mão em Actions > GitHub Pages > Run workflow. O endereço fica `https://<usuário>.github.io/<repositório>/` (aqui, `https://ruanps01.github.io/drivemart/`).
+
+Para ativar uma vez:
+
+1. Em Settings > Pages, escolha **GitHub Actions** em Build and deployment > Source.
+2. Repositório privado: o GitHub Pages exige o plano GitHub Pro (ou outro pago) para publicar a partir de repositório privado. Sem ele, torne o repositório público. O site publicado fica público nos dois casos.
+3. Faça um push na `main` (ou rode o workflow manualmente) e acompanhe em Actions.
+
+A pipeline monta o site com `VITE_OFFLINE=true` e com a pasta base que o Pages informa (`/drivemart/`, ou `/` se houver domínio próprio), e copia o `index.html` para `404.html` para que endereços como `/drivemart/termos` abram direto.
 
 ## Colocando no ar
 

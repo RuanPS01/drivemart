@@ -16,8 +16,11 @@ export interface FirebaseServices {
 
 const env = import.meta.env;
 const useEmulators = env.VITE_USE_EMULATORS === 'true';
+/** VITE_OFFLINE=true força o modo de teste (só direção), mesmo com o Firebase configurado. */
+const forcedOffline = env.VITE_OFFLINE === 'true';
 
 function config() {
+  if (forcedOffline) return null;
   if (env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_PROJECT_ID) {
     return {
       apiKey: env.VITE_FIREBASE_API_KEY,
@@ -71,4 +74,9 @@ export function firebase(): FirebaseServices | null {
   }
   services = { app, auth, db, storage, functions, emulators: useEmulators };
   return services;
+}
+
+/** Modo de teste: sem Firebase, o jogo roda só com direção; login e comércio ficam desativados. */
+export function isOffline(): boolean {
+  return firebase() === null;
 }

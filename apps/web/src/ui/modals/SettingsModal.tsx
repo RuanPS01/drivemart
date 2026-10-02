@@ -2,6 +2,7 @@ import { useGame } from '../../state/gameStore';
 import { applySettings, saveSettings, type Settings } from '../../state/settings';
 import type { GraphicsMode, ViewDistance } from '../../game/Engine';
 import { Modal } from './Modal';
+import { appUrl } from '../links';
 
 export function SettingsModal() {
   const engine = useGame((s) => s.engine);
@@ -62,11 +63,11 @@ export function SettingsModal() {
           Mostrar velocímetro
         </label>
         <p className="muted small">
-          <a href="/termos" target="_blank" rel="noopener">
+          <a href={appUrl('termos')} target="_blank" rel="noopener">
             Termos de Uso
           </a>{' '}
           ·{' '}
-          <a href="/privacidade" target="_blank" rel="noopener">
+          <a href={appUrl('privacidade')} target="_blank" rel="noopener">
             Política de Privacidade
           </a>
         </p>

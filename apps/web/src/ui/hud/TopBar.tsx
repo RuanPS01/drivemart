@@ -5,6 +5,7 @@ import { useAuth } from '../../state/authStore';
 import { sellerActionCount, useOrders } from '../../state/orderStore';
 import { useUi } from '../../state/uiStore';
 import { CaretIcon, GearIcon } from '../icons/Icons';
+import { appUrl } from '../links';
 
 /** Barra superior: logo, botão de login sempre disponível e menu do usuário. */
 export function TopBar() {
@@ -30,6 +31,11 @@ export function TopBar() {
             Entrar
           </button>
         )}
+        {!online && (
+          <span className="test-badge" title="Login e compras desativados nesta versão">
+            Modo de teste
+          </span>
+        )}
         {user && (
           <div className="user-menu">
             <button className="hud-button" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
@@ -43,7 +49,7 @@ export function TopBar() {
                 </button>
                 <button onClick={() => (setMenu(false), open({ name: 'settings' }))}>Configurações</button>
                 {user.admin && (
-                  <a href="/admin" target="_blank" rel="noopener">
+                  <a href={appUrl('admin')} target="_blank" rel="noopener">
                     Painel admin
                   </a>
                 )}

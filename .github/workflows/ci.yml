@@ -38,10 +38,11 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
         working-directory: apps/web
-      # Sem emuladores o jogo roda offline e o fluxo de compra é pulado.
+      # Sem emuladores o jogo roda no modo de teste (igual ao GitHub Pages) e o fluxo de compra é pulado.
       - run: npm run test:e2e
         env:
           VITE_USE_EMULATORS: 'false'
+          VITE_OFFLINE: 'true'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

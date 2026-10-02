@@ -28,6 +28,7 @@ import { useUi } from '../state/uiStore';
 import { Toasts } from '../ui/hud/Toasts';
 import { ModalHost } from '../ui/modals/ModalHost';
 import { formatDeadline } from '../ui/modals/PendingOrders';
+import { appUrl } from '../ui/links';
 
 type Tab = 'disputes' | 'orders' | 'reports' | 'moderation' | 'config';
 
@@ -124,7 +125,7 @@ export function AdminApp() {
         </div>
         <div className="row">
           {user && <span className="muted">{user.email}</span>}
-          <a className="btn" href="/">
+          <a className="btn" href={appUrl()}>
             Voltar ao jogo
           </a>
         </div>

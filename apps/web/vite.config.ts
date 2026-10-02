@@ -32,6 +32,8 @@ function cityData(): Plugin {
 }
 
 export default defineConfig({
+  // Pasta base do site: "/" no Firebase Hosting; "/<repositório>/" no GitHub Pages (definida pela pipeline).
+  base: process.env.VITE_BASE || '/',
   plugins: [react(), cityData()],
   worker: { format: 'es' },
   // O maior pedaço é o Rapier com o WASM embutido (~4,3 MB, carregado à parte e guardado em cache).

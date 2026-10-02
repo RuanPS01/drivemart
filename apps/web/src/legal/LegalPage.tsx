@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { appUrl } from '../ui/links';
 
 /**
  * Termos de Uso e Política de Privacidade.
@@ -9,17 +10,17 @@ export function LegalPage({ page }: { page: 'termos' | 'privacidade' }) {
   return (
     <div className="legal">
       <header className="admin-head">
-        <a className="logo small" href="/">
+        <a className="logo small" href={appUrl()}>
           DRIVE<span>MART</span>
         </a>
         <nav className="row">
-          <a className="btn" href="/termos">
+          <a className="btn" href={appUrl('termos')}>
             Termos de Uso
           </a>
-          <a className="btn" href="/privacidade">
+          <a className="btn" href={appUrl('privacidade')}>
             Privacidade
           </a>
-          <a className="btn primary" href="/">
+          <a className="btn primary" href={appUrl()}>
             Voltar ao jogo
           </a>
         </nav>

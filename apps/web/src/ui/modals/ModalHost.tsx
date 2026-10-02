@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isOffline } from '../../services/firebase';
 import { useGame } from '../../state/gameStore';
 import { useUi } from '../../state/uiStore';
 import { AuthModal } from './AuthModal';
@@ -19,6 +20,8 @@ export function ModalHost() {
   }, [engine, modal]);
 
   if (!modal) return null;
+  // Modo de teste: só mapa e configurações; login e comércio dependem do Firebase.
+  if (isOffline() && modal.name !== 'map' && modal.name !== 'settings') return null;
   switch (modal.name) {
     case 'auth':
       return <AuthModal key="auth" />;
