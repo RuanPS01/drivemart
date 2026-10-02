@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatBRL, type FacadeFit, type FacadeRegion, type LayoutLot } from '@drivemart/shared';
-import { callableError } from '../../services/orders';
+import { callableError, referencePrice } from '../../services/orders';
 import {
   ACCEPTED_TYPES,
   MAX_UPLOAD,
@@ -342,7 +342,7 @@ function PlaceTab({ lot }: { lot: LayoutLot }) {
           Traçar rota
         </button>
       </div>
-      <p className="muted small">Preço de compra pela plataforma: {formatBRL(lot.pr)}.</p>
+      <p className="muted small">Preço de compra pela plataforma: {formatBRL(referencePrice(lot))}.</p>
     </div>
   );
 }

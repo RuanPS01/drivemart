@@ -178,3 +178,41 @@ export class Px {
     }
   }
 }
+
+/** Fonte de pixels 3 x 5 para letreiros (só as letras usadas nas pinturas). */
+const GLYPHS: Record<string, string[]> = {
+  A: ['010', '101', '111', '101', '101'],
+  B: ['110', '101', '110', '101', '110'],
+  C: ['011', '100', '100', '100', '011'],
+  E: ['111', '100', '110', '100', '111'],
+  I: ['111', '010', '010', '010', '111'],
+  L: ['100', '100', '100', '100', '111'],
+  O: ['010', '101', '101', '101', '010'],
+  P: ['110', '101', '110', '100', '100'],
+  R: ['110', '101', '110', '101', '101'],
+  S: ['011', '100', '010', '001', '110'],
+  T: ['111', '010', '010', '010', '010'],
+  X: ['101', '101', '010', '101', '101'],
+  '8': ['010', '101', '010', '101', '010'],
+  ' ': ['000', '000', '000', '000', '000'],
+};
+
+/** Escreve um texto em maiúsculas com a fonte 3 x 5, ampliada `scale` vezes. "Í" vira I com acento. */
+export function pixelText(p: Px, x: number, y: number, text: string, c: Rgb, scale = 2, a = A_SOLID): void {
+  let cx = x;
+  for (const ch of text) {
+    const accent = ch === 'Í';
+    const g = GLYPHS[accent ? 'I' : ch] ?? GLYPHS[' ']!;
+    g.forEach((row, j) => {
+      for (let i = 0; i < 3; i++)
+        if (row[i] === '1') p.rect(cx + i * scale, y + j * scale, scale, scale, c, a);
+    });
+    if (accent) p.rect(cx + 2 * scale, y - 2 * scale, scale, scale, c, a);
+    cx += 4 * scale;
+  }
+}
+
+/** Largura (pixels) de um texto escrito com `pixelText`. */
+export function pixelTextWidth(text: string, scale = 2): number {
+  return text.length * 4 * scale - scale;
+}

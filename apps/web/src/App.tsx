@@ -17,6 +17,7 @@ import { useOrderWatch } from './ui/useOrderWatch';
 
 export function App() {
   const ready = useGame((s) => s.phase === 'ready');
+  const city = useGame((s) => s.settings.city);
   const engine = useGame((s) => s.engine);
 
   useEffect(() => initAuth(), []);
@@ -34,7 +35,8 @@ export function App() {
 
   return (
     <div className="app">
-      <GameCanvas cityId="rio" />
+      {/* A chave recria o canvas e o motor ao trocar de cidade. */}
+      <GameCanvas key={city} cityId={city} />
       {ready && (
         <div className="hud">
           <TopBar />

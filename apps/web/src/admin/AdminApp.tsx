@@ -369,7 +369,7 @@ function Moderation() {
     <section className="form admin-moderation">
       <label>
         Id do imóvel
-        <input value={id} onChange={(e) => setId(e.target.value)} placeholder="rio-xxxxxx" />
+        <input value={id} onChange={(e) => setId(e.target.value)} placeholder="rio-xxxxxx ou sf-xxxxxx" />
       </label>
       <div className="row">
         <button className="btn" onClick={() => void lookup()} disabled={!id.trim()}>
@@ -453,6 +453,13 @@ function ConfigTab() {
       }}
     >
       <h2>Preço dos imóveis da plataforma</h2>
+      <label>
+        Preço único para todos os imóveis (R$; 0 usa a fórmula abaixo)
+        <input
+          defaultValue={centsToInput(pricing.flatCents ?? 0)}
+          onChange={(e) => setPricing({ ...pricing, flatCents: parseBRL(e.target.value) ?? 0 })}
+        />
+      </label>
       <div className="form-row">
         <label>
           Preço por m² (R$)

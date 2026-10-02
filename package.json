@@ -28,6 +28,7 @@
     "test:e2e": "npm run test:e2e -w @drivemart/web",
     "city:extract": "npm run extract -w @drivemart/city-pipeline --",
     "city:seed": "npm run seed -w @drivemart/city-pipeline --",
+    "city:cars": "npm run cars -w @drivemart/city-pipeline --",
     "admin:grant": "node scripts/grant-admin.mjs",
     "test:emulator": "node scripts/ensure-secrets.mjs && npm run build -w @drivemart/functions && firebase emulators:exec --project demo-drivemart --only auth,firestore,storage,functions \"vitest run --config vitest.emulator.config.ts\""
   },

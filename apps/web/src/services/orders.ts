@@ -61,19 +61,24 @@ export function watchOrder(orderId: string, cb: (o: OrderDoc | null) => void): U
 
 let pricingCache: (PricingConfig & { overrides?: Record<string, number> }) | null = null;
 
+/** Preço de um lote com a configuração já carregada (ou a padrão), para exibir sem esperar a rede. */
+export function referencePrice(lot: LayoutLot): number {
+  const cfg = pricingCache ?? DEFAULT_PRICING;
+  const override = pricingCache?.overrides?.[lot.id];
+  if (typeof override === 'number' && override > 0) return override;
+  return lotPrice({ area: lot.a, floors: lot.fl, orla: lot.o === 1 }, cfg);
+}
+
 /** Preço atual de um lote da plataforma (mesma fórmula das functions; o servidor confirma ao gerar o Pix). */
 export async function currentPrice(lot: LayoutLot): Promise<number> {
   const s = firebase();
-  if (!s) return lot.pr;
-  if (!pricingCache) {
+  if (s && !pricingCache) {
     try {
       const snap = await getDoc(doc(s.db, 'config', 'pricing'));
       pricingCache = { ...DEFAULT_PRICING, ...(snap.data() as Partial<PricingConfig> | undefined) };
     } catch {
-      return lot.pr;
+      /* sem rede: usa a configuração padrão */
     }
   }
-  const override = pricingCache.overrides?.[lot.id];
-  if (typeof override === 'number' && override > 0) return override;
-  return lotPrice({ area: lot.a, floors: lot.fl, orla: lot.o === 1 }, pricingCache);
+  return referencePrice(lot);
 }

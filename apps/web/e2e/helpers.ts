@@ -4,6 +4,8 @@ declare global {
   interface Window {
     __drivemart?: {
       carSpeed: number;
+      carChoice: { id: string; color: number };
+      layout: { cityId: string };
       teleportToLot(id: string): boolean;
       parcels: { byId: Map<string, unknown> };
     };

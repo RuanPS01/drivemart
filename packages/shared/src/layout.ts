@@ -84,7 +84,8 @@ export interface CityLayout {
 
 /**
  * Grade de pistas: bitmap linha a linha (1 bit por célula, base64) e altura de cada célula de pista
- * em meios metros (Int8 em base64, na mesma ordem das células marcadas).
+ * na mesma ordem das células marcadas: em meios metros (Int8 em base64) ou, com `h16`, em decímetros
+ * (Int16 little-endian em base64), para cidades com morros acima de 60 m.
  */
 export interface RoadLattice {
   cell: number;
@@ -94,6 +95,7 @@ export interface RoadLattice {
   rows: number;
   mask: string;
   heights: string;
+  h16?: boolean;
 }
 
 export const WALL_STRIDE = 9;
@@ -145,7 +147,11 @@ function fromBase64(b64: string): Uint8Array {
 /** Decodifica a grade de pistas em nós (centros das células marcadas). */
 export function latticeNodes(l: RoadLattice): LatticeNodes {
   const bits = fromBase64(l.mask);
-  const hs = new Int8Array(fromBase64(l.heights).buffer);
+  const raw = fromBase64(l.heights);
+  const hs = l.h16
+    ? new Int16Array(raw.buffer, raw.byteOffset, raw.byteLength >> 1)
+    : new Int8Array(raw.buffer);
+  const hScale = l.h16 ? 10 : 2;
   const index = new Int32Array(l.cols * l.rows);
   const xs: number[] = [],
     ys: number[] = [],
@@ -159,7 +165,7 @@ export function latticeNodes(l: RoadLattice): LatticeNodes {
       r = Math.floor(k / l.cols);
     xs.push(l.minX + (c + 0.5) * l.cell);
     zs.push(l.minZ + (r + 0.5) * l.cell);
-    ys.push((hs[n] ?? 0) / 2);
+    ys.push((hs[n] ?? 0) / hScale);
     cs.push(c);
     rs.push(r);
     n++;

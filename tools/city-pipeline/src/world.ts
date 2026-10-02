@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { readBmp, sampleTriangle, type Rgba } from './bmp';
+import { uvCenter } from './regions';
 import type { Instance, Model, Scene } from './scene';
 
 /**
@@ -52,6 +53,10 @@ export interface WorldTri {
   g: number;
   b: number;
   cov: number;
+  /** Página de textura e centro do triângulo nela (pixels de 256 x 256). */
+  tex: string | null;
+  tx: number;
+  ty: number;
 }
 
 /** Percorre os triângulos de uma instância já transformados para o mundo. */
@@ -65,7 +70,20 @@ export function forEachWorldTri(
   if (!model) return;
   const c = Math.cos(inst.rot),
     s = Math.sin(inst.rot);
-  const tri: WorldTri = { p: new Float64Array(9), nx: 0, ny: 1, nz: 0, area: 0, r: 0, g: 0, b: 0, cov: 1 };
+  const tri: WorldTri = {
+    p: new Float64Array(9),
+    nx: 0,
+    ny: 1,
+    nz: 0,
+    area: 0,
+    r: 0,
+    g: 0,
+    b: 0,
+    cov: 1,
+    tex: null,
+    tx: 0,
+    ty: 0,
+  };
   model.parts.forEach((part, pi) => {
     const col = colors ? colors.of(model, pi) : null;
     const P = part.positions;
@@ -96,6 +114,8 @@ export function forEachWorldTri(
       tri.ny = ny / len;
       tri.nz = nz / len;
       tri.area = len / 2;
+      tri.tex = part.texture;
+      if (part.uvs.length) [tri.tx, tri.ty] = uvCenter(part.uvs, t);
       if (col) {
         tri.r = col[t * 4]!;
         tri.g = col[t * 4 + 1]!;

@@ -1,6 +1,7 @@
 import * as G from './painters/ground';
 import * as B from './painters/buildings';
 import * as O from './painters/objects';
+import * as C from './painters/cars';
 import type { Px } from './pixels';
 import { appUrl } from '../../ui/links';
 
@@ -55,12 +56,28 @@ const PAINTERS = {
   palm: O.palm,
   tree: O.tree,
   bush: O.bush,
-  carPaint: O.carPaint,
-  carGlass: O.carGlass,
-  carFront: O.carFront,
-  carRear: O.carRear,
-  wheel: O.wheel,
-  tread: O.tread,
+  // Carros: bloco contínuo no fim (o shader acende sempre as partes brilhantes destas camadas).
+  carTop: C.carTop,
+  carSide: C.carSide,
+  carDoor: C.carDoor,
+  carRust: C.carRust,
+  carWood: C.carWood,
+  carGlass: C.carGlass,
+  carWindows: C.carWindows,
+  carFrontClassic: C.carFrontClassic,
+  carFront70: C.carFront70,
+  carFrontBus: C.carFrontBus,
+  carFrontTruck: C.carFrontTruck,
+  carRearClassic: C.carRearClassic,
+  carRear70: C.carRear70,
+  carChecker: C.carChecker,
+  carStripe: C.carStripe,
+  carPoliceSF: C.carPoliceSF,
+  carPoliciaRio: C.carPoliciaRio,
+  carLightbar: C.carLightbar,
+  carTaxiSign: C.carTaxiSign,
+  wheel: C.wheel,
+  tread: C.tread,
 } satisfies Record<string, (seed: number) => Px>;
 
 export type LayerName = keyof typeof PAINTERS;
@@ -68,6 +85,9 @@ export const LAYER_NAMES = Object.keys(PAINTERS) as LayerName[];
 export const LAYER: Record<LayerName, number> = Object.fromEntries(
   LAYER_NAMES.map((n, i) => [n, i]),
 ) as Record<LayerName, number>;
+
+/** Faixa de camadas dos carros (faróis, lanternas e letreiros ficam acesos à noite). */
+export const CAR_LAYERS = { first: LAYER.carTop, last: LAYER.tread } as const;
 
 export const FACADE_FAMILIES: LayerName[] = [
   'facadeConcrete',

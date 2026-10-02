@@ -1,5 +1,4 @@
-/** Identificador de cidade suportada pelo jogo. */
-export type CityId = 'rio';
+import type { CityId } from './cities';
 
 /** Situação de um lote. Sem documento no Firestore, o lote está disponível para compra da plataforma. */
 export type ParcelStatus = 'available' | 'reserved' | 'owned' | 'for_sale';

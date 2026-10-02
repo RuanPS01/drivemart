@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PROP_STRIDE, type CityLayout } from '@drivemart/shared';
+import { PROP_STRIDE, type CarCatalog, type CarSpec, type CityLayout } from '@drivemart/shared';
 import { loadOverrides, paintLayers } from './art/TextureLibrary';
 import { GameAudio } from './audio/GameAudio';
 import { CameraRig } from './camera/CameraRig';
@@ -16,6 +16,7 @@ import { useAuth } from '../state/authStore';
 import { useParcels } from '../state/parcelStore';
 import { Physics } from './physics/Physics';
 import { Car } from './vehicle/Car';
+import { FALLBACK_CAR, maxHalfWidth } from './vehicle/carModel';
 import { ChunkStreamer } from './world/ChunkStreamer';
 import {
   createTextureArray,
@@ -37,6 +38,12 @@ const VIEW: Record<ViewDistance, { radius: number; fogNear: number; fogFar: numb
   normal: { radius: 460, fogNear: 140, fogFar: 440 },
   far: { radius: 640, fogNear: 200, fogFar: 620 },
 };
+
+/** Carro escolhido numa cidade: tipo do catálogo e índice da cor. */
+export interface CarChoice {
+  id: string;
+  color: number;
+}
 
 export interface EngineEvents {
   progress?: (p: number, message: string) => void;
@@ -65,6 +72,7 @@ export class Engine {
   private unsubs: (() => void)[] = [];
   private rig: CameraRig;
   private car!: Car;
+  private worldMaterial!: THREE.Material;
   private streamer!: ChunkStreamer;
   private uniforms!: WorldUniforms;
   private sky!: THREE.Mesh;
@@ -87,6 +95,8 @@ export class Engine {
   private constructor(
     readonly canvas: HTMLCanvasElement,
     readonly layout: CityLayout,
+    /** Tipos de carro da cidade (o primeiro é o padrão). */
+    readonly cars: CarSpec[],
     readonly physics: Physics,
     private readonly events: EngineEvents,
   ) {
@@ -114,9 +124,10 @@ export class Engine {
     const physicsP = Physics.create();
     report(0.15, 'Baixando o mapa da cidade...');
     const layoutUrl = appUrl(`cities/${cityId}/layout.json`);
+    const carsP = loadCars(cityId);
     const layout = (await (await fetch(layoutUrl)).json()) as CityLayout;
     const physics = await physicsP;
-    const engine = new Engine(canvas, layout, physics, events);
+    const engine = new Engine(canvas, layout, await carsP, physics, events);
     report(0.35, 'Pintando as texturas...');
     await engine.setup(layoutUrl);
     report(0.55, 'Montando as ruas...');
@@ -131,7 +142,7 @@ export class Engine {
     await loadOverrides(data);
     const tex = createTextureArray(data);
     this.uniforms = createWorldUniforms(tex);
-    const world = createWorldMaterial(this.uniforms);
+    const world = (this.worldMaterial = createWorldMaterial(this.uniforms));
     const trees = createTreeMaterial(this.uniforms);
     this.sky = createSky(this.uniforms.night);
     this.backdrop = createBackdrop(this.uniforms);
@@ -143,8 +154,9 @@ export class Engine {
       maxInFlight: 4,
     });
     this.scene.add(this.streamer.root);
-    this.car = new Car(this.physics, world, [1.6, 0.22, 0.18], this.layout.spawn);
+    this.car = new Car(this.physics, world, this.cars[0]!, 0, this.layout.spawn);
     this.scene.add(this.car.object);
+    this.fitCamera();
     this.smash = new SmashProps(this.layout, world);
     this.smash.onSmash = (s) => this.audio.smash(s);
     this.scene.add(this.smash.group);
@@ -202,6 +214,30 @@ export class Engine {
     this.streamer.update(target);
     // Segura o carro no lugar até o chão da região ter colisão (senão ele cai antes de carregar).
     this.hold = this.streamer.physicsReady(target) ? null : { x, y, z, heading, since: performance.now() };
+  }
+
+  /** Carro em uso (tipo e cor). */
+  get carChoice(): CarChoice {
+    return { id: this.car.spec.id, color: this.car.color };
+  }
+
+  /** Troca o carro no lugar onde está, mantendo o rumo. Tipos desconhecidos voltam para o padrão. */
+  setCar(choice: CarChoice | undefined): void {
+    const spec = this.cars.find((c) => c.id === choice?.id) ?? this.cars[0]!;
+    const color = Math.max(0, Math.min(spec.colors.length - 1, Math.floor(choice?.color ?? 0)));
+    if (spec === this.car.spec && color === this.car.color) return;
+    const p = this.car.position;
+    const heading = this.car.heading;
+    const ground = p.y - this.car.rideHeight;
+    this.car.dispose();
+    this.car = new Car(this.physics, this.worldMaterial, spec, color, [p.x, ground, p.z, heading]);
+    this.car.place(p.x, ground, p.z, heading);
+    this.scene.add(this.car.object);
+    this.fitCamera();
+  }
+
+  private fitCamera(): void {
+    this.rig.fit(this.car.spec.length / 2, this.car.spec.height - this.car.rideHeight);
   }
 
   get carPosition(): THREE.Vector3 {
@@ -277,9 +313,11 @@ export class Engine {
   setGraphics(mode: GraphicsMode): void {
     this.graphics = mode;
     const ps1 = mode === 'ps1';
-    this.uniforms.snapRes.value.set(ps1 ? 160 : 0, ps1 ? 120 : 0);
-    this.uniforms.affine.value = ps1 ? 1 : 0;
-    this.uniforms.dither.value = ps1 ? 1 : 0;
+    // Modo PS1 é só pixelado: resolução baixa ampliada sem suavização. Sem vértices tremidos,
+    // UV afim (deformava as texturas em polígonos grandes) nem pontilhado.
+    this.uniforms.snapRes.value.set(0, 0);
+    this.uniforms.affine.value = 0;
+    this.uniforms.dither.value = 0;
     this.canvas.style.imageRendering = ps1 ? 'pixelated' : 'auto';
     this.resize();
   }
@@ -293,9 +331,6 @@ export class Engine {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    const aspect = w / h;
-    if (this.uniforms && this.graphics === 'ps1')
-      this.uniforms.snapRes.value.set(Math.round(120 * aspect), 120);
   }
 
   start(): void {
@@ -342,7 +377,16 @@ export class Engine {
       // Objetos de rua que voam ao bater; a batida freia um pouco o carro.
       const lv = this.car.body.linvel();
       const vel = { x: lv.x, y: lv.y, z: lv.z };
-      this.smash.update({ position: p, heading: this.car.heading, velocity: vel }, dt);
+      this.smash.update(
+        {
+          position: p,
+          heading: this.car.heading,
+          velocity: vel,
+          halfWidth: maxHalfWidth(this.car.spec),
+          halfLength: this.car.spec.length / 2,
+        },
+        dt,
+      );
       if (vel.x !== lv.x || vel.z !== lv.z) this.car.body.setLinvel(vel, true);
 
       const impact = this.car.takeImpact();
@@ -375,7 +419,8 @@ export class Engine {
       this.events.route?.(route);
     }
     this.sky.position.copy(this.camera.position);
-    this.backdrop.position.set(this.camera.position.x, 0, this.camera.position.z);
+    // O fundo de morros acompanha a altura da câmera: em San Francisco o carro sobe mais de 100 m.
+    this.backdrop.position.set(this.camera.position.x, this.camera.position.y - 3, this.camera.position.z);
     this.uniforms.time.value += dt;
     this.uniforms.carPos.value.copy(pos);
     this.uniforms.carDir.value.set(Math.sin(this.car.heading), Math.cos(this.car.heading));
@@ -433,8 +478,24 @@ export class Engine {
     this.input.dispose();
     this.streamer.dispose();
     this.car.dispose();
+    this.physics.dispose();
     this.renderer.dispose();
+    useParcels.getState().reset();
   }
+}
+
+/** Catálogo de carros da cidade; sem ele, um sedã padrão. */
+async function loadCars(cityId: string): Promise<CarSpec[]> {
+  try {
+    const res = await fetch(appUrl(`cities/${cityId}/cars.json`));
+    if (res.ok) {
+      const cat = (await res.json()) as CarCatalog;
+      if (cat.cars?.length) return cat.cars;
+    }
+  } catch {
+    /* segue com o padrão */
+  }
+  return [FALLBACK_CAR];
 }
 
 /** Posição das lâmpadas dos postes (x, y, z) a partir dos props do traçado. */

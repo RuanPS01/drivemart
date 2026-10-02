@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { CITY_LIST, cityInfo } from '@drivemart/shared';
 import { signOut } from '../../services/auth';
 import { firebase } from '../../services/firebase';
 import { useAuth } from '../../state/authStore';
+import { chooseCity } from '../../state/city';
+import { useGame } from '../../state/gameStore';
 import { sellerActionCount, useOrders } from '../../state/orderStore';
 import { useUi } from '../../state/uiStore';
 import { CaretIcon, GearIcon } from '../icons/Icons';
@@ -23,6 +26,7 @@ export function TopBar() {
         DRIVE<span>MART</span>
       </div>
       <div className="topbar-actions">
+        <CityMenu />
         <button className="hud-button" onClick={() => open({ name: 'map' })} title="Mapa (M)">
           Mapa
         </button>
@@ -74,6 +78,40 @@ export function TopBar() {
           <GearIcon />
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Escolha da cidade (recarrega o mapa ao trocar). */
+function CityMenu() {
+  const city = useGame((s) => s.settings.city);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="user-menu">
+      <button
+        className="hud-button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        title="Trocar de cidade"
+      >
+        {cityInfo(city).short} <CaretIcon />
+      </button>
+      {open && (
+        <div className="user-menu-list panel" onMouseLeave={() => setOpen(false)}>
+          {CITY_LIST.map((c) => (
+            <button
+              key={c.id}
+              className={c.id === city ? 'active' : ''}
+              onClick={() => {
+                setOpen(false);
+                chooseCity(c.id);
+              }}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,9 @@ const layout = {
   props: [0, 10, 0, 10, 0, 1, 20, 0, 20, 0],
 } as unknown as CityLayout;
 
+/** Medidas de um sedã comum. */
+const size = { halfWidth: 0.92, halfLength: 2.3 };
+
 describe('SmashProps', () => {
   it('só os objetos quebráveis entram (postes continuam fixos)', () => {
     expect(new SmashProps(layout, new THREE.MeshBasicMaterial()).count).toBe(1);
@@ -20,14 +23,19 @@ describe('SmashProps', () => {
     props.onSmash = () => hits++;
     const velocity = { x: 0, y: 0, z: 15 };
     // Longe: nada acontece.
-    props.update({ position: new THREE.Vector3(10, 0.6, 5), heading: 0, velocity }, 1 / 60);
+    props.update({ position: new THREE.Vector3(10, 0.6, 5), heading: 0, velocity, ...size }, 1 / 60);
     expect(props.stateOf(0)).toBe('static');
     // Para-choque encostando no cone.
-    props.update({ position: new THREE.Vector3(10, 0.6, 8.2), heading: 0, velocity }, 1 / 60);
+    props.update({ position: new THREE.Vector3(10, 0.6, 8.2), heading: 0, velocity, ...size }, 1 / 60);
     expect(hits).toBe(1);
     expect(props.stateOf(0)).toBe('flying');
     expect(velocity.z).toBeLessThan(15);
-    const far = { position: new THREE.Vector3(10, 0.6, 60), heading: 0, velocity: { x: 0, y: 0, z: 0 } };
+    const far = {
+      position: new THREE.Vector3(10, 0.6, 60),
+      heading: 0,
+      velocity: { x: 0, y: 0, z: 0 },
+      ...size,
+    };
     for (let t = 0; t < 6; t += 1 / 60) props.update(far, 1 / 60);
     expect(props.stateOf(0)).toBe('resting');
   });
@@ -35,7 +43,7 @@ describe('SmashProps', () => {
   it('parado ou devagar não derruba nada', () => {
     const props = new SmashProps(layout, new THREE.MeshBasicMaterial());
     props.update(
-      { position: new THREE.Vector3(10, 0.6, 9), heading: 0, velocity: { x: 0, y: 0, z: 0.5 } },
+      { position: new THREE.Vector3(10, 0.6, 9), heading: 0, velocity: { x: 0, y: 0, z: 0.5 }, ...size },
       1 / 60,
     );
     expect(props.stateOf(0)).toBe('static');
