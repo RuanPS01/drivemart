@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LAYER, LAYER_NAMES, LAYER_SIZE } from '../art/TextureLibrary';
+import { CAR_LAYERS, LAYER, LAYER_NAMES, LAYER_SIZE } from '../art/TextureLibrary';
 
 /** Parâmetros visuais compartilhados por todos os materiais do mundo. */
 export interface WorldUniforms {
@@ -104,9 +104,8 @@ const COMMON_FRAG = /* glsl */ `
       vec3 moon = col * vec3(0.24, 0.27, 0.42);
       vec3 lit = moon;
       if (glow) {
-        // Janelas acesas ao acaso; faróis, lanternas e lâmpadas de poste sempre acesos.
-        bool always = abs(layer - ${LAYER.carFront.toFixed(1)}) < 0.5
-          || abs(layer - ${LAYER.carRear.toFixed(1)}) < 0.5
+        // Janelas acesas ao acaso; faróis, lanternas, letreiros dos carros e lâmpadas de poste sempre acesos.
+        bool always = (layer > ${(CAR_LAYERS.first - 0.5).toFixed(1)} && layer < ${(CAR_LAYERS.last + 0.5).toFixed(1)})
           || abs(layer - ${LAYER.lamp.toFixed(1)}) < 0.5;
         float on = always ? 1.0 : step(0.42, hash12(floor(vWorld.xz / 3.2) + floor(vWorld.y / 3.2) * 17.0));
         lit = mix(moon, tex.rgb * vec3(1.35, 1.2, 0.85) + vec3(0.18, 0.14, 0.04), on);

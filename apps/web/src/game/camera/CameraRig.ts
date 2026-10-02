@@ -11,8 +11,18 @@ export class CameraRig {
   private look = new THREE.Vector3();
   private yaw = 0;
   private initialized = false;
+  /** Meio comprimento do carro e altura do teto acima do centro do chassi (ônibus pedem a câmera mais longe). */
+  private halfLength = 2.3;
+  private roofAbove = 0.71;
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
+
+  /** Ajusta as distâncias ao tamanho do carro. */
+  fit(halfLength: number, roofAbove: number): void {
+    this.halfLength = halfLength;
+    this.roofAbove = roofAbove;
+    this.initialized = false;
+  }
 
   cycle(): CameraMode {
     this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length]!;
@@ -39,8 +49,8 @@ export class CameraRig {
       const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
       cam.position
         .copy(target)
-        .addScaledVector(up, 0.55)
-        .addScaledVector(fwd, lookBack ? -2.2 : 0.4);
+        .addScaledVector(up, Math.max(0.55, this.roofAbove - 0.3))
+        .addScaledVector(fwd, lookBack ? -(this.halfLength - 0.1) : Math.max(0.4, this.halfLength - 1.9));
       cam.up.copy(up);
       cam.lookAt(cam.position.clone().addScaledVector(fwd, 10));
       return;
@@ -52,8 +62,9 @@ export class CameraRig {
     let d = desiredYaw - this.yaw;
     d = Math.atan2(Math.sin(d), Math.cos(d));
     this.yaw += d * (1 - Math.exp(-dt * (lookBack ? 30 : 4.5)));
-    const dist = this.mode === 'far' ? 9.5 : 6.4;
-    const height = this.mode === 'far' ? 3.6 : 2.3;
+    const far = this.mode === 'far';
+    const dist = far ? Math.max(9.5, this.halfLength + 7.2) : Math.max(6.4, this.halfLength + 4.1);
+    const height = far ? Math.max(3.6, this.roofAbove + 2.5) : Math.max(2.3, this.roofAbove + 1.2);
     const fx = Math.sin(this.yaw),
       fz = Math.cos(this.yaw);
     const extra = Math.min(1.2, Math.abs(speed) / 40);

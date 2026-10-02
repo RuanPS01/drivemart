@@ -16,6 +16,13 @@ export function SettingsModal() {
     set({ settings: next });
     saveSettings(next);
   };
+  // Frota da cidade atual (cada cidade tem a sua) e o carro escolhido nela.
+  const cars = engine?.cars ?? [];
+  const choice = settings.cars[settings.city] ?? engine?.carChoice;
+  const car = cars.find((c) => c.id === choice?.id) ?? cars[0];
+  const colorIndex = car && choice?.id === car.id ? Math.min(choice.color, car.colors.length - 1) : 0;
+  const chooseCar = (id: string, color: number) =>
+    apply({ cars: { ...settings.cars, [settings.city]: { id, color } } });
   return (
     <Modal title="Configurações">
       <div className="form">
@@ -29,6 +36,37 @@ export function SettingsModal() {
             ))}
           </select>
         </label>
+        {car && (
+          <label>
+            Carro
+            <select value={car.id} onChange={(e) => chooseCar(e.target.value, 0)}>
+              {cars.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {car && car.colors.length > 1 && (
+          <div className="field">
+            <span className="field-label">Cor</span>
+            <div className="swatches" role="radiogroup" aria-label="Cor do carro">
+              {car.colors.map((c, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="radio"
+                  aria-checked={i === colorIndex}
+                  aria-label={`Cor ${i + 1}`}
+                  className={i === colorIndex ? 'swatch on' : 'swatch'}
+                  style={{ background: `rgb(${c.join(',')})` }}
+                  onClick={() => chooseCar(car.id, i)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <label>
           Gráficos
           <select

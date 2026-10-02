@@ -1,4 +1,4 @@
-import { A_CUT, A_GLOW, A_SOLID, A_TINT, hex, mix, Px, rng, shade } from '../pixels';
+import { A_CUT, A_GLOW, A_SOLID, hex, mix, Px, rng, shade } from '../pixels';
 
 export function metal(seed: number): Px {
   const r = rng(seed);
@@ -138,75 +138,4 @@ export function bush(seed: number): Px {
     p.disc(x, y, 3 + r() * 4, c, A_SOLID);
   }
   return p;
-}
-
-/** Pintura do carro: branca com degradê, recebe a cor do carro (TINT). */
-export function carPaint(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px();
-  for (let y = 0; y < 128; y++) {
-    const k = 1.05 - (y / 128) * 0.3;
-    for (let x = 0; x < 128; x++) p.set(x, y, shade(hex('#f2f2f2'), k), A_TINT);
-  }
-  p.rect(0, 40, 128, 2, hex('#ffffff'), A_TINT);
-  p.rect(0, 96, 128, 2, hex('#8a8a8a'), A_TINT);
-  return p.grain(0.02, r);
-}
-
-export function carGlass(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px();
-  for (let y = 0; y < 128; y++)
-    for (let x = 0; x < 128; x++) p.set(x, y, mix(hex('#5d7a8c'), hex('#18232b'), y / 128), A_SOLID);
-  for (let j = 0; j < 128; j++) {
-    p.blend(20 + j * 0.5, j, hex('#cfe0ea'), 0.4);
-    p.blend(28 + j * 0.5, j, hex('#cfe0ea'), 0.25);
-  }
-  return p.grain(0.02, r);
-}
-
-/** Frente do carro: grade e faróis (faróis acendem à noite). */
-export function carFront(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px().fill(hex('#2a2a2c'), A_SOLID);
-  for (let y = 44; y < 84; y += 4) p.rect(30, y, 68, 2, hex('#8d9196'), A_SOLID);
-  p.disc(16, 64, 13, hex('#c9c9c9'), A_SOLID);
-  p.disc(112, 64, 13, hex('#c9c9c9'), A_SOLID);
-  p.disc(16, 64, 10, hex('#fff6d8'), A_GLOW);
-  p.disc(112, 64, 10, hex('#fff6d8'), A_GLOW);
-  p.rect(0, 100, 128, 12, hex('#b9bcc0'), A_SOLID);
-  return p.grain(0.03, r);
-}
-
-export function carRear(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px().fill(hex('#2a2a2c'), A_SOLID);
-  p.rect(4, 48, 34, 28, hex('#c0221b'), A_GLOW);
-  p.rect(90, 48, 34, 28, hex('#c0221b'), A_GLOW);
-  p.rect(48, 54, 32, 16, hex('#e8e5d8'), A_SOLID);
-  p.rect(0, 100, 128, 12, hex('#b9bcc0'), A_SOLID);
-  return p.grain(0.03, r);
-}
-
-/** Roda vista de lado: pneu com calota cromada. */
-export function wheel(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px().fill(hex('#141414'), A_SOLID);
-  p.disc(64, 64, 62, hex('#1c1c1c'), A_SOLID);
-  p.disc(64, 64, 38, hex('#a9adb2'), A_SOLID);
-  p.disc(64, 64, 30, hex('#d7dade'), A_SOLID);
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * Math.PI * 2;
-    p.disc(64 + Math.cos(a) * 18, 64 + Math.sin(a) * 18, 4, hex('#6f7378'), A_SOLID);
-  }
-  p.disc(64, 64, 7, hex('#55595e'), A_SOLID);
-  return p.grain(0.03, r);
-}
-
-export function tread(seed: number): Px {
-  const r = rng(seed);
-  const p = new Px().fill(hex('#1b1b1b'), A_SOLID);
-  for (let y = 0; y < 128; y += 8)
-    for (let x = 0; x < 128; x += 16) p.rect(x + ((y / 8) % 2) * 8, y, 6, 4, hex('#2b2b2b'), A_SOLID);
-  return p.grain(0.04, r);
 }

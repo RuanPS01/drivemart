@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { PROP_STRIDE, type CityLayout } from '@drivemart/shared';
-import { CAR } from '../vehicle/carModel';
 import { PROP_BUILDERS, SMASHABLE, type SmashSpec } from './props';
 import { geometryFromData } from './three';
 
@@ -19,6 +18,8 @@ export interface CarState {
   position: THREE.Vector3;
   heading: number;
   velocity: { x: number; y: number; z: number };
+  halfWidth: number;
+  halfLength: number;
 }
 
 /**
@@ -177,8 +178,8 @@ export class SmashProps {
     if (speed < 1.5) return;
     const fx = Math.sin(car.heading),
       fz = Math.cos(car.heading);
-    const halfW = CAR.width / 2,
-      halfL = CAR.length / 2;
+    const halfW = car.halfWidth,
+      halfL = car.halfLength;
     const check = (i: number) => {
       const spec = this.specs[this.type[i]!]!;
       const resting = this.state[i] === RESTING;
@@ -197,7 +198,7 @@ export class SmashProps {
       car.velocity.x -= vx * 0.03 * spec.mass;
       car.velocity.z -= vz * 0.03 * spec.mass;
     };
-    this.forNear(p.x, p.z, 5, (i) => {
+    this.forNear(p.x, p.z, Math.max(5, halfL + 1.5), (i) => {
       if (this.state[i] === STATIC) check(i);
     });
     // Objetos já derrubados podem ter ido parar longe da posição original.

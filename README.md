@@ -12,6 +12,10 @@ O site abre direto no jogo: não é preciso conta para dirigir. A conta (e-mail 
 - Todos os terrenos custam R$ 1,00 (preço único configurável no admin; com 0, volta a valer a fórmula por área, andares e orla).
 - Visual de PS1 feito por código: texturas pintadas proceduralmente com cores de 15 bits, imagem pixelada em resolução baixa (modo PS1) ou nítida, neblina, modo noite com janelas acesas, faróis e luz dos postes.
 - Carro com física arcade (Rapier): freio de mão que solta a traseira, desvirar automático, câmera de perseguição, para-choque e olhar para trás.
+- Frota própria em cada cidade, escolhida nas configurações (tipo e cor, salvos por cidade). Carroceria, rodas e pintura são montadas por código a partir do perfil de cada carro:
+  - Rio: 10 veículos com as proporções medidas nos carros do nível de Driver 2 (sedãs, rabo de peixe, viatura com giroflex, ônibus, picape com caçamba, caminhão de bombeiros com escada, limusine e caminhonete enferrujada);
+  - San Francisco: 7 carros americanos dos anos 70, como os do Driver (cupê, sedã grande, perua com painel de madeira, picape, van, táxi amarelo e viatura preta e branca).
+    Massa, força, freios e velocidade máxima acompanham o tamanho de cada um, e a câmera se afasta nos veículos grandes.
 - Objetos de rua (cones, caixas, barris, mesas, cadeiras) que voam quando o carro bate.
 - Som sintetizado em tempo real: motor com troca de marcha, pneus cantando, batidas e objetos quebrando.
 - Minimapa giratório, mapa da cidade, GPS com setas até o seu imóvel e teleporte.
@@ -39,7 +43,7 @@ tests/                 testes de regras e de functions contra os emuladores
 
 ## Sobre o conteúdo original
 
-Nenhum arquivo do jogo original vai para o site ou para este repositório: nem texturas, nem malhas, nem carros, nem sons. O pacote de níveis em VRML é lido só localmente pelo `tools/city-pipeline` para extrair o traçado (posição das ruas, calçadas, prédios e objetos). O resultado, `packages/city-data/rio/layout.json`, contém apenas números e está versionado, então o projeto roda sem o pacote original. Toda a arte e o som são gerados por código próprio.
+Nenhum arquivo do jogo original vai para o site ou para este repositório: nem texturas, nem malhas, nem carros, nem sons. O pacote de níveis em VRML é lido só localmente pelo `tools/city-pipeline` para extrair o traçado (posição das ruas, calçadas, prédios e objetos) e as proporções dos carros do Rio. Os resultados, `packages/city-data/<cidade>/layout.json` e `cars.json`, contêm apenas números e estão versionados, então o projeto roda sem o pacote original. Toda a arte e o som são gerados por código próprio.
 
 ## Rodando localmente
 
@@ -156,7 +160,7 @@ A integração com o Mercado Pago usa a API de Orders do SDK oficial atrás da i
 | Voltar para a rua        | R                                     |                    |
 | Mapa                     | M                                     |                    |
 
-No celular aparecem botões na tela. As configurações (engrenagem) têm a cidade, gráficos PS1 (pixelado) ou nítidos, distância de visão, dia ou noite, volume e velocímetro.
+No celular aparecem botões na tela. As configurações (engrenagem) têm a cidade, o carro e a cor, gráficos PS1 (pixelado) ou nítidos, distância de visão, dia ou noite, volume e velocímetro.
 
 ## Extraindo o traçado de novo (opcional)
 
@@ -170,6 +174,17 @@ npm run city:extract -- --archive caminho/para/Driver_levels_as_VRML.7z --city s
 O comando extrai só a pasta da cidade para `.cache/` (fora do Git), gera `packages/city-data/<cidade>/layout.json` e mantém os IDs dos lotes estáveis com `ids.lock.json`. Acrescente `--debug tools/city-pipeline/out/<cidade>.png` para salvar uma imagem de conferência vista de cima.
 
 No Driver 2 os modelos têm nome (ROAD, PATH, SLIGHT...). No Driver 1 não, então San Francisco é classificada pela região da página de textura que cada peça usa (asfalto, calçada, água, rocha, poste, barril), com as regras em `tools/city-pipeline/src/regions.ts`. A escala é de 200 unidades por metro, e as alturas da grade de ruas usam 16 bits por causa dos morros.
+
+### Carros
+
+O catálogo de cada cidade fica em `packages/city-data/<cidade>/cars.json`: perfil da carroceria em fatias ao longo do comprimento (base, linha das janelas, teto e larguras), eixos, raio das rodas, cores, pintura especial e velocidade máxima. Para gerar de novo:
+
+```bash
+npm run city:cars -- --city rio   # mede os carros do nível de Driver 2 (precisa do city:extract do Rio antes)
+npm run city:cars -- --city sf    # perfis próprios em tools/city-pipeline/src/carArchetypes.ts
+```
+
+O pacote do Driver 1 não traz os carros, então os de San Francisco são perfis desenhados à mão no estilo dos anos 70. Nomes, tipos, pinturas e cores de serviço do Rio ficam em `tools/city-pipeline/src/cli/cars.ts`. O jogo monta a malha em `apps/web/src/game/vehicle/carModel.ts` e pinta as texturas em `apps/web/src/game/art/painters/cars.ts`.
 
 ## Fora desta versão
 

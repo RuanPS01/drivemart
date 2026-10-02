@@ -605,6 +605,38 @@ kbd {
   outline-offset: 0;
 }
 
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field-label {
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.swatch.on {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .form-error {
   color: var(--danger);
   margin: 0;
