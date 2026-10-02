@@ -53,6 +53,8 @@ if (values.debug) {
   const crop = values.crop
     ? (values.crop.split(',').map(Number) as [number, number, number, number])
     : undefined;
-  renderDebugPng(result.layout, resolve(values.debug), Number(values.scale), crop);
-  console.log(`Imagem de conferência: ${values.debug}`);
+  // Caminho relativo à pasta de onde o comando foi chamado (npm muda o diretório para o pacote).
+  const out = resolve(process.env.INIT_CWD ?? process.cwd(), values.debug);
+  renderDebugPng(result.layout, out, Number(values.scale), crop);
+  console.log(`Imagem de conferência: ${out}`);
 }

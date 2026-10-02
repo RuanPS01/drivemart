@@ -35,10 +35,16 @@ export function buildRoadLattice(grid: Grid, cell = 5): RoadLattice {
       const k = r * cols + c;
       bits[k >> 3]! |= 1 << (k & 7);
       hs.sort((a, b) => a - b);
-      // Decímetros para meios metros, limitado ao Int8.
-      heights.push(Math.max(-128, Math.min(127, Math.round(hs[hs.length >> 1]! / 5))));
+      heights.push(hs[hs.length >> 1]!); // decímetros
     }
   }
+  // Cidade plana: meios metros em Int8 (formato original). Com morros: decímetros em Int16.
+  const h16 = heights.some((h) => h < -640 || h > 635);
+  const packed = h16
+    ? Buffer.from(Int16Array.from(heights).buffer)
+    : Buffer.from(
+        Int8Array.from(heights.map((h) => Math.max(-128, Math.min(127, Math.round(h / 5))))).buffer,
+      );
   return {
     cell,
     minX: grid.minX,
@@ -46,6 +52,7 @@ export function buildRoadLattice(grid: Grid, cell = 5): RoadLattice {
     cols,
     rows,
     mask: Buffer.from(bits).toString('base64'),
-    heights: Buffer.from(Int8Array.from(heights).buffer).toString('base64'),
+    heights: packed.toString('base64'),
+    ...(h16 ? { h16: true } : {}),
   };
 }

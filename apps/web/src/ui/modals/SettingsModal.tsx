@@ -1,3 +1,5 @@
+import { CITY_LIST, type CityId } from '@drivemart/shared';
+import { chooseCity } from '../../state/city';
 import { useGame } from '../../state/gameStore';
 import { applySettings, saveSettings, type Settings } from '../../state/settings';
 import type { GraphicsMode, ViewDistance } from '../../game/Engine';
@@ -18,12 +20,22 @@ export function SettingsModal() {
     <Modal title="Configurações">
       <div className="form">
         <label>
+          Cidade
+          <select value={settings.city} onChange={(e) => chooseCity(e.target.value as CityId)}>
+            {CITY_LIST.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           Gráficos
           <select
             value={settings.graphics}
             onChange={(e) => apply({ graphics: e.target.value as GraphicsMode })}
           >
-            <option value="ps1">PS1 autêntico (pixelado, vértices tremidos)</option>
+            <option value="ps1">PS1 (pixelado)</option>
             <option value="sharp">Nítido (resolução da tela)</option>
           </select>
         </label>

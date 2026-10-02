@@ -66,6 +66,12 @@ export class Physics {
     this.chunks.delete(key);
   }
 
+  /** Libera a memória do mundo físico (o WASM do Rapier continua carregado para a próxima cidade). */
+  dispose(): void {
+    this.chunks.clear();
+    this.world.free();
+  }
+
   step(): void {
     this.world.step();
   }

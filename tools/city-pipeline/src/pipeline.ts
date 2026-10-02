@@ -17,6 +17,7 @@ import { buildLots, type Lot, type Wall } from './lots';
 import { round2 } from './math';
 import { collectProps } from './props';
 import { buildRoadLattice } from './roads';
+import { SF_RULES, type TextureRules } from './regions';
 import { buildScene, type Scene } from './scene';
 import { parseVrml } from './vrml/parser';
 import { TriangleColors } from './world';
@@ -32,6 +33,8 @@ export interface CityConfig {
   chunkSize: number;
   /** Ponto de partida fixo opcional [x, z]. */
   spawnNear?: [number, number];
+  /** Driver 1 (modelos sem nome): classificação pela região da textura. */
+  rules?: TextureRules;
 }
 
 export const CITIES: Record<string, CityConfig> = {
@@ -44,6 +47,16 @@ export const CITIES: Record<string, CityConfig> = {
     chunkSize: 128,
     // Avenida da orla, de frente para a praia.
     spawnNear: [150, -3163],
+  },
+  sf: {
+    cityId: 'sf',
+    name: 'San Francisco',
+    source: 'Traçado derivado de Driver (San Francisco, dia). Sem texturas, malhas ou sons originais.',
+    archiveFolder: 'Driver/San Francisco (day)',
+    // Driver 1: peça de rua de 1.500 unidades (7,5 m) e andares de 750 unidades (3,75 m).
+    unitsPerMeter: 200,
+    chunkSize: 128,
+    rules: SF_RULES,
   },
 };
 
@@ -123,7 +136,7 @@ export function runPipeline(levelDir: string, cfg: CityConfig, idsPath: string):
   const doc = parseVrml(readFileSync(join(levelDir, 'level.wrl'), 'latin1'));
   const scene = buildScene(doc, { unitsPerMeter: cfg.unitsPerMeter });
   const classes = new Map<string, ModelClass>();
-  for (const m of scene.models.values()) classes.set(m.name, classifyModel(m));
+  for (const m of scene.models.values()) classes.set(m.name, classifyModel(m, cfg.rules));
 
   let minX = Infinity,
     minZ = Infinity,
@@ -143,7 +156,15 @@ export function runPipeline(levelDir: string, cfg: CityConfig, idsPath: string):
   ];
 
   const colors = new TriangleColors(levelDir);
-  const ground = buildGround(scene, classes, colors, cfg.chunkSize, bounds);
+  const ground = buildGround(
+    scene,
+    classes,
+    colors,
+    cfg.chunkSize,
+    bounds,
+    cfg.rules?.ground,
+    cfg.rules?.fallback,
+  );
 
   const buildingSegs = worldSegments(scene, (m) => classes.get(m)?.kind === 'building', colors, {
     minLength: 3,

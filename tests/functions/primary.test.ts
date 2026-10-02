@@ -61,8 +61,8 @@ describe('compra primária (functions no emulador, provedor de teste)', () => {
     );
     expect(r.ok).toBe(true);
     const { orderId, amount, qrCode } = r.data!;
-    expect(amount).toBe(24000);
-    expect(parseBrCode(qrCode)['54']).toBe('240.00');
+    expect(amount).toBe(100);
+    expect(parseBrCode(qrCode)['54']).toBe('1.00');
 
     const parcel = (await db.doc('parcels/rio-test02').get()).data() as ParcelDoc;
     expect(parcel.status).toBe('reserved');

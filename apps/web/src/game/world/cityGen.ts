@@ -86,8 +86,9 @@ export function indexLayout(layout: CityLayout): CityIndex {
     return m;
   };
   const sandIdx = layout.materials.indexOf('sand');
+  // Calçadão de ondas (Copacabana) só no Rio, perto da areia da praia.
   const nearSand = new Set<string>();
-  for (const ch of Object.values(layout.chunks)) {
+  for (const ch of layout.cityId === 'rio' ? Object.values(layout.chunks) : []) {
     for (const p of ch.g) {
       if (p.m !== sandIdx) continue;
       const ring = p.r[0]!;

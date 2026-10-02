@@ -1,3 +1,4 @@
+export * from './cities';
 export * from './types';
 export * from './pricing';
 export * from './platform';

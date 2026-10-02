@@ -10,6 +10,8 @@ export interface PricingConfig {
   multiplier: number;
   minCents: number;
   maxCents: number;
+  /** Preço único para todos os lotes (centavos). Zero usa a fórmula acima. */
+  flatCents: number;
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
@@ -19,6 +21,8 @@ export const DEFAULT_PRICING: PricingConfig = {
   multiplier: 1,
   minCents: 5_000,
   maxCents: 999_000,
+  // Todos os terrenos custam R$ 1,00 (a fórmula continua disponível com flatCents = 0).
+  flatCents: 100,
 };
 
 export interface LotPricingInput {
@@ -35,6 +39,7 @@ function roundToTenReais(cents: number): number {
 
 /** Preço inicial de venda pela plataforma, em centavos. */
 export function lotPrice(lot: LotPricingInput, cfg: PricingConfig = DEFAULT_PRICING): number {
+  if (cfg.flatCents > 0) return Math.round(cfg.flatCents);
   const raw =
     lot.area *
     cfg.basePerM2Cents *

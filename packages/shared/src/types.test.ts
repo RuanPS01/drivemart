@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { cityInfo, isCityId } from './cities';
 import { toCityStateEntry, type ParcelDoc } from './types';
 
 const base: ParcelDoc = {
@@ -72,5 +73,14 @@ describe('toCityStateEntry', () => {
       },
     });
     expect(e?.f).toBeUndefined();
+  });
+});
+
+describe('cidades', () => {
+  it('reconhece só as cidades do jogo', () => {
+    expect(isCityId('rio')).toBe(true);
+    expect(isCityId('sf')).toBe(true);
+    expect(isCityId('ny')).toBe(false);
+    expect(cityInfo('sf').name).toBe('San Francisco');
   });
 });

@@ -17,6 +17,8 @@ export interface ParcelState {
   setRegion: (region: string, parcels: Record<string, CityStateEntry>) => void;
   clearRegion: (region: string) => void;
   setZone: (zone: ZoneContact | null) => void;
+  /** Limpa tudo (troca de cidade). */
+  reset: () => void;
 }
 
 const byRegion = new Map<string, string[]>();
@@ -42,4 +44,8 @@ export const useParcels = create<ParcelState>((set) => ({
     }),
   setZone: (zone) =>
     set((s) => (s.zone?.lotId === zone?.lotId && s.zone?.stopped === zone?.stopped ? s : { zone })),
+  reset: () => {
+    byRegion.clear();
+    set((s) => ({ entries: {}, zone: null, version: s.version + 1 }));
+  },
 }));

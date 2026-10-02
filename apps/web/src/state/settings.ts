@@ -1,3 +1,4 @@
+import { DEFAULT_CITY, isCityId, type CityId } from '@drivemart/shared';
 import type { Engine, GraphicsMode, ViewDistance } from '../game/Engine';
 
 /** Preferências do jogador, guardadas no navegador. */
@@ -8,6 +9,7 @@ export interface Settings {
   /** Volume de 0 a 1. */
   volume: number;
   speedometer: boolean;
+  city: CityId;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -16,14 +18,39 @@ export const DEFAULT_SETTINGS: Settings = {
   view: 'normal',
   volume: 0.7,
   speedometer: true,
+  city: DEFAULT_CITY,
 };
 
 const KEY = 'drivemart:settings';
 
+/** Cidade pedida no endereço (?cidade=sf), que tem prioridade sobre a salva. */
+function cityFromUrl(): CityId | null {
+  try {
+    const c = new URLSearchParams(window.location.search).get('cidade');
+    return isCityId(c) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Mantém a cidade no endereço, para o link abrir direto nela. */
+export function syncCityUrl(city: CityId): void {
+  try {
+    const url = new URL(window.location.href);
+    if (city === DEFAULT_CITY) url.searchParams.delete('cidade');
+    else url.searchParams.set('cidade', city);
+    window.history.replaceState(null, '', url);
+  } catch {
+    /* sem histórico (ex.: testes) */
+  }
+}
+
 export function loadSettings(): Settings {
+  const urlCity = cityFromUrl();
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>;
     return {
+      city: urlCity ?? (isCityId(s.city) ? s.city : DEFAULT_CITY),
       graphics: s.graphics === 'sharp' ? 'sharp' : 'ps1',
       night: s.night === true,
       view: s.view === 'near' || s.view === 'far' ? s.view : 'normal',
@@ -31,7 +58,7 @@ export function loadSettings(): Settings {
       speedometer: s.speedometer !== false,
     };
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_SETTINGS, city: urlCity ?? DEFAULT_CITY };
   }
 }
 

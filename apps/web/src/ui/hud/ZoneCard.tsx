@@ -7,6 +7,7 @@ import { useOrders } from '../../state/orderStore';
 import { useParcels } from '../../state/parcelStore';
 import { useUi, type ModalState } from '../../state/uiStore';
 import { linkDomain, openShopLink } from '../links';
+import { referencePrice } from '../../services/orders';
 
 export function lotTitle(lot: LayoutLot, entry?: CityStateEntry): string {
   return entry?.n || `Imóvel ${lot.s}-${lot.id.slice(-4).toUpperCase()}`;
@@ -73,7 +74,7 @@ export function ZoneCard() {
         <p className="muted">{lotSubtitle(lot)}</p>
       </div>
       {entry?.o && !mine && <p className="zone-owner">Dono: {entry.o}</p>}
-      {!entry && <p className="zone-price">{formatBRL(lot.pr)}</p>}
+      {!entry && <p className="zone-price">{formatBRL(referencePrice(lot))}</p>}
       {entry?.s === 'for_sale' && entry.p && <p className="zone-price">{formatBRL(entry.p)}</p>}
       {entry?.s === 'reserved' && !myOrder && (
         <p className="muted">Uma compra deste imóvel está em andamento.</p>
@@ -136,7 +137,7 @@ function OfflineZoneCard({ lot }: { lot: LayoutLot }) {
         <p className="muted">{lotSubtitle(lot)}</p>
       </div>
       <p className="zone-price">
-        {formatBRL(lot.pr)} <small className="muted">preço de referência</small>
+        {formatBRL(referencePrice(lot))} <small className="muted">preço de referência</small>
       </p>
       <p className="muted small">Compras e login estão desativados nesta versão de teste.</p>
     </div>

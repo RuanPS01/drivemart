@@ -10,7 +10,14 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { DEFAULT_PLATFORM, DEFAULT_PRICING, lotAnchor, regionKey, type CityLayout } from '@drivemart/shared';
+import {
+  DEFAULT_PLATFORM,
+  DEFAULT_PRICING,
+  lotAnchor,
+  lotPrice,
+  regionKey,
+  type CityLayout,
+} from '@drivemart/shared';
 
 const root = resolve(import.meta.dirname, '../../../..');
 const { values } = parseArgs({
@@ -34,7 +41,7 @@ for (const lot of layout.lots) {
     db.doc(`parcels/${lot.id}`),
     {
       cityId: layout.cityId,
-      basePrice: lot.pr,
+      basePrice: lotPrice({ area: lot.a, floors: lot.fl, orla: lot.o === 1 }),
       area: lot.a,
       floors: lot.fl,
       height: lot.h,

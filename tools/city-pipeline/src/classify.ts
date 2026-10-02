@@ -1,3 +1,4 @@
+import { dominantRegion, upwardFraction, type TextureRules } from './regions';
 import type { Model } from './scene';
 
 /** Materiais de chão do traçado. A ordem define a prioridade quando duas peças se sobrepõem na mesma altura. */
@@ -64,12 +65,40 @@ export function shortName(model: string): string {
   return model.replace(/^_\d{4}_/, '').replace(/\.wrl$/, '');
 }
 
-export function classifyModel(model: Model): ModelClass {
+/**
+ * Classifica um modelo. Com `rules` (Driver 1, modelos sem nome), objetos de rua saem da região da
+ * textura e rampas de morro contam como chão.
+ */
+export function classifyModel(model: Model, rules?: TextureRules): ModelClass {
   const name = shortName(model.name);
   const [x0, y0, z0, x1, y1, z1] = model.bbox;
   const h = y1 - y0;
   const wMax = Math.max(x1 - x0, z1 - z0);
   const wMin = Math.min(x1 - x0, z1 - z0);
+
+  if (rules) {
+    const dom = dominantRegion(model);
+    const rule =
+      dom &&
+      rules.props.find(
+        (r) =>
+          r.tex === dom.tex &&
+          dom.x >= r.x0 &&
+          dom.x < r.x1 &&
+          dom.y >= r.y0 &&
+          dom.y < r.y1 &&
+          h >= (r.minH ?? 0) &&
+          h <= (r.maxH ?? Infinity),
+      );
+    if (rule) return rule.prop === 'skip' ? { kind: 'skip' } : { kind: 'prop', prop: rule.prop };
+    // Rampas de rua e de calçada nos morros: quase toda a área voltada para cima.
+    if (!model.billboard && wMax <= 60 && h <= wMax * 0.6 && upwardFraction(model) >= 0.85) {
+      return { kind: 'ground', mat: null };
+    }
+    // Cabos e torres finas (pontes) e objetos miúdos sem regra: fora do traçado.
+    if (!model.billboard && wMin < 3 && h > 10) return { kind: 'skip' };
+    if (!model.billboard && wMax < 2 && h < 3) return { kind: 'skip' };
+  }
 
   if (model.billboard) {
     if (h < 2.2) return { kind: 'tree', tree: 'bush' };

@@ -1,13 +1,16 @@
 # DriveMart
 
-Jogo de navegador no estilo dos clássicos de direção do PS1 (Driver 1 e 2), em modo de direção livre pelo Rio de Janeiro. Cada prédio da cidade pode ser comprado via Pix, ganhar uma imagem ou GIF animado na fachada, um nome e um link de entrada que abre quando alguém para o carro na vaga em frente. Os donos podem revender os imóveis para outros jogadores.
+Jogo de navegador no estilo dos clássicos de direção do PS1 (Driver 1 e 2), em modo de direção livre pelo Rio de Janeiro e por San Francisco. Cada prédio da cidade pode ser comprado via Pix, ganhar uma imagem ou GIF animado na fachada, um nome e um link de entrada que abre quando alguém para o carro na vaga em frente. Os donos podem revender os imóveis para outros jogadores.
 
 O site abre direto no jogo: não é preciso conta para dirigir. A conta (e-mail e senha ou Google) só é pedida na hora de comprar.
 
 ## Recursos
 
-- Cidade do Rio recriada a partir do traçado do nível de Driver 2: ruas, calçadas, calçadão da orla, praia, lagoa, prédios, postes, semáforos, árvores e palmeiras.
-- Visual de PS1 feito por código: texturas pintadas proceduralmente, vértices tremidos, UV afim, cores de 15 bits com pontilhado, neblina, modo noite com janelas acesas, faróis e luz dos postes.
+- Duas cidades, trocadas pelo menu da barra superior (ou pelo endereço, com `?cidade=sf`):
+  - Rio de Janeiro, a partir do traçado do nível de Driver 2: ruas, calçadas, calçadão da orla, praia, lagoa, prédios, postes, semáforos, árvores e palmeiras;
+  - San Francisco, a partir do nível de Driver: ladeiras de mais de 100 m, ruas, calçadas, baía, postes (inclusive os de Chinatown), semáforos, barris de obra e árvores.
+- Todos os terrenos custam R$ 1,00 (preço único configurável no admin; com 0, volta a valer a fórmula por área, andares e orla).
+- Visual de PS1 feito por código: texturas pintadas proceduralmente com cores de 15 bits, imagem pixelada em resolução baixa (modo PS1) ou nítida, neblina, modo noite com janelas acesas, faróis e luz dos postes.
 - Carro com física arcade (Rapier): freio de mão que solta a traseira, desvirar automático, câmera de perseguição, para-choque e olhar para trás.
 - Objetos de rua (cones, caixas, barris, mesas, cadeiras) que voam quando o carro bate.
 - Som sintetizado em tempo real: motor com troca de marcha, pneus cantando, batidas e objetos quebrando.
@@ -111,6 +114,7 @@ Grave o catálogo de lotes e as configurações iniciais (preços e taxa) no Fir
 
 ```bash
 GOOGLE_APPLICATION_CREDENTIALS=chave.json npm run city:seed -- --city rio --project <id-do-projeto>
+GOOGLE_APPLICATION_CREDENTIALS=chave.json npm run city:seed -- --city sf --project <id-do-projeto>
 GOOGLE_APPLICATION_CREDENTIALS=chave.json npm run admin:grant -- voce@exemplo.com --project <id-do-projeto>
 ```
 
@@ -152,7 +156,7 @@ A integração com o Mercado Pago usa a API de Orders do SDK oficial atrás da i
 | Voltar para a rua        | R                                     |                    |
 | Mapa                     | M                                     |                    |
 
-No celular aparecem botões na tela. As configurações (engrenagem) têm gráficos PS1 ou nítidos, distância de visão, dia ou noite, volume e velocímetro.
+No celular aparecem botões na tela. As configurações (engrenagem) têm a cidade, gráficos PS1 (pixelado) ou nítidos, distância de visão, dia ou noite, volume e velocímetro.
 
 ## Extraindo o traçado de novo (opcional)
 
@@ -160,10 +164,13 @@ Só é necessário para refazer ou acrescentar cidades. Com o pacote de níveis 
 
 ```bash
 npm run city:extract -- --archive caminho/para/Driver_levels_as_VRML.7z --city rio
+npm run city:extract -- --archive caminho/para/Driver_levels_as_VRML.7z --city sf
 ```
 
-O comando extrai só a pasta do Rio para `.cache/` (fora do Git), gera `packages/city-data/rio/layout.json` e mantém os IDs dos lotes estáveis com `ids.lock.json`. Acrescente `--debug tools/city-pipeline/out/rio.png` para salvar uma imagem de conferência vista de cima.
+O comando extrai só a pasta da cidade para `.cache/` (fora do Git), gera `packages/city-data/<cidade>/layout.json` e mantém os IDs dos lotes estáveis com `ids.lock.json`. Acrescente `--debug tools/city-pipeline/out/<cidade>.png` para salvar uma imagem de conferência vista de cima.
+
+No Driver 2 os modelos têm nome (ROAD, PATH, SLIGHT...). No Driver 1 não, então San Francisco é classificada pela região da página de textura que cada peça usa (asfalto, calçada, água, rocha, poste, barril), com as regras em `tools/city-pipeline/src/regions.ts`. A escala é de 200 unidades por metro, e as alturas da grade de ruas usam 16 bits por causa dos morros.
 
 ## Fora desta versão
 
-Tráfego, polícia e pedestres; multiplayer; pagamento com Stripe (a interface já existe); moderação automática de imagens; outras cidades (o pipeline aceita, mas cada uma precisa de conferência dos lotes); aviso por e-mail ao vendedor (por enquanto o aviso fica no jogo).
+Tráfego, polícia e pedestres; multiplayer; pagamento com Stripe (a interface já existe); moderação automática de imagens; outras cidades além do Rio e de San Francisco (o pipeline aceita, mas cada uma precisa de conferência dos lotes e, no Driver 1, das regras de textura); aviso por e-mail ao vendedor (por enquanto o aviso fica no jogo).

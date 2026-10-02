@@ -9,6 +9,7 @@ import { useUi } from '../../state/uiStore';
 import { lotSubtitle, lotTitle } from '../hud/ZoneCard';
 import { Modal } from '../modals/Modal';
 import { cityMapImage } from './cityMap';
+import { referencePrice } from '../../services/orders';
 
 /** Mapa da cidade em tela cheia: arrastar para mover, roda do mouse para zoom, clique num imóvel para ver ações. */
 export function MapModal() {
@@ -158,9 +159,10 @@ export function MapModal() {
             <strong>{lotTitle(selected, entry)}</strong>
             <span className="muted">{lotSubtitle(selected)}</span>
             {offline ? (
-              <span>Preço de referência: {formatBRL(selected.pr)}</span>
+              <span>Preço de referência: {formatBRL(referencePrice(selected))}</span>
             ) : (
-              !entry && !index.owned?.[selected.id] && <span>Plataforma: {formatBRL(selected.pr)}</span>
+              !entry &&
+              !index.owned?.[selected.id] && <span>Plataforma: {formatBRL(referencePrice(selected))}</span>
             )}
             {salePrice && <span>Revenda: {formatBRL(salePrice)}</span>}
             <div className="row">

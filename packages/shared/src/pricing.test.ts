@@ -2,16 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { centsToInput, DEFAULT_PRICING, formatBRL, lotPrice, parseBRL } from './pricing';
 
 describe('lotPrice', () => {
-  it('aplica área, andares e orla e arredonda para dezenas de reais', () => {
-    const base = lotPrice({ area: 77, floors: 3, orla: false });
-    expect(base % 1000).toBe(0);
-    expect(base).toBe(24_000);
-    expect(lotPrice({ area: 77, floors: 3, orla: true })).toBe(38_000);
+  const formula = { ...DEFAULT_PRICING, flatCents: 0 };
+
+  it('por padrão todos os terrenos custam R$ 1,00', () => {
+    expect(lotPrice({ area: 77, floors: 3, orla: false })).toBe(100);
+    expect(lotPrice({ area: 100_000, floors: 20, orla: true })).toBe(100);
   });
 
-  it('respeita mínimo e máximo', () => {
-    expect(lotPrice({ area: 1, floors: 1, orla: false })).toBe(DEFAULT_PRICING.minCents);
-    expect(lotPrice({ area: 100_000, floors: 20, orla: true })).toBe(DEFAULT_PRICING.maxCents);
+  it('com a fórmula: aplica área, andares e orla e arredonda para dezenas de reais', () => {
+    const base = lotPrice({ area: 77, floors: 3, orla: false }, formula);
+    expect(base % 1000).toBe(0);
+    expect(base).toBe(24_000);
+    expect(lotPrice({ area: 77, floors: 3, orla: true }, formula)).toBe(38_000);
+  });
+
+  it('com a fórmula: respeita mínimo e máximo', () => {
+    expect(lotPrice({ area: 1, floors: 1, orla: false }, formula)).toBe(formula.minCents);
+    expect(lotPrice({ area: 100_000, floors: 20, orla: true }, formula)).toBe(formula.maxCents);
   });
 });
 

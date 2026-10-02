@@ -277,9 +277,11 @@ export class Engine {
   setGraphics(mode: GraphicsMode): void {
     this.graphics = mode;
     const ps1 = mode === 'ps1';
-    this.uniforms.snapRes.value.set(ps1 ? 160 : 0, ps1 ? 120 : 0);
-    this.uniforms.affine.value = ps1 ? 1 : 0;
-    this.uniforms.dither.value = ps1 ? 1 : 0;
+    // Modo PS1 é só pixelado: resolução baixa ampliada sem suavização. Sem vértices tremidos,
+    // UV afim (deformava as texturas em polígonos grandes) nem pontilhado.
+    this.uniforms.snapRes.value.set(0, 0);
+    this.uniforms.affine.value = 0;
+    this.uniforms.dither.value = 0;
     this.canvas.style.imageRendering = ps1 ? 'pixelated' : 'auto';
     this.resize();
   }
@@ -293,9 +295,6 @@ export class Engine {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    const aspect = w / h;
-    if (this.uniforms && this.graphics === 'ps1')
-      this.uniforms.snapRes.value.set(Math.round(120 * aspect), 120);
   }
 
   start(): void {
@@ -375,7 +374,8 @@ export class Engine {
       this.events.route?.(route);
     }
     this.sky.position.copy(this.camera.position);
-    this.backdrop.position.set(this.camera.position.x, 0, this.camera.position.z);
+    // O fundo de morros acompanha a altura da câmera: em San Francisco o carro sobe mais de 100 m.
+    this.backdrop.position.set(this.camera.position.x, this.camera.position.y - 3, this.camera.position.z);
     this.uniforms.time.value += dt;
     this.uniforms.carPos.value.copy(pos);
     this.uniforms.carDir.value.set(Math.sin(this.car.heading), Math.cos(this.car.heading));
@@ -433,7 +433,9 @@ export class Engine {
     this.input.dispose();
     this.streamer.dispose();
     this.car.dispose();
+    this.physics.dispose();
     this.renderer.dispose();
+    useParcels.getState().reset();
   }
 }
 

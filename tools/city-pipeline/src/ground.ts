@@ -1,6 +1,7 @@
 import { Clipper, FillRule, type Path64, type Paths64 } from 'clipper2-js';
 import { GROUND_MATERIALS, groundMatFromColor, type GroundMat, type ModelClass } from './classify';
 import { Grid } from './raster';
+import { findRegion, type GroundRegion } from './regions';
 import type { Scene } from './scene';
 import { forEachWorldTri, type TriangleColors } from './world';
 
@@ -92,6 +93,9 @@ export function buildGround(
   colors: TriangleColors,
   chunkSize: number,
   bounds: [number, number, number, number],
+  /** Driver 1: material pela região da textura (antes da cor média). */
+  regions: readonly GroundRegion[] = [],
+  fallback: Partial<Record<GroundMat, GroundMat>> = {},
 ): GroundResult {
   const grid = new Grid(bounds[0], bounds[1], bounds[2], bounds[3], 1);
   // balde[chunk][material][altura em dm] = triângulos (Clipper)
@@ -109,9 +113,12 @@ export function buildGround(
       const yAvg = (p[1]! + p[4]! + p[7]!) / 3;
       const raised = yAvg > 0.05 && yAvg < 0.3;
       let mat: GroundMat;
+      const region = regions.length ? findRegion(regions, t.tex, t.tx, t.ty) : undefined;
       if (cls.kind === 'ground' && cls.mat) mat = cls.mat;
+      else if (region) mat = region.mat;
       else {
         mat = groundMatFromColor(t.r, t.g, t.b, raised);
+        mat = fallback[mat] ?? mat;
         if (cls.kind === 'terrain' && (mat === 'road' || mat === 'sidewalk')) mat = 'plaza';
       }
       const cx = (p[0]! + p[3]! + p[6]!) / 3;
